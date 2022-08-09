@@ -18,7 +18,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *****************************************************************************/
-//Tudv8
 #ifndef SL_WFX_HOST_BUS_PINOUT_H
 #define SL_WFX_HOST_BUS_PINOUT_H
 

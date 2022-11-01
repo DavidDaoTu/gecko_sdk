@@ -14,17 +14,11 @@
  * sections of the MSLA applicable to Source Code.
  *
  ******************************************************************************/
-
-#include  <rtos_description.h>
-
 #include "sl_wfx.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <kernel/include/os.h>
-#include <common/include/rtos_utils.h>
-#include <common/include/rtos_err.h>
 
 #if SL_WFX_SLK_CURVE25519
 // Use ECDH legacy context format
@@ -56,8 +50,8 @@
 ******************************************************/
 
 /* Semaphore to signal wfx driver available */
-extern OS_MUTEX   wfx_securelink_rx_mutex;
-extern OS_TCB     wfx_securelink_task_tcb;
+extern osMutexId_t      wfx_securelink_rx_mutex;
+extern osSemaphoreId_t  wfx_securelink_sem;
 
 /******************************************************
 *                   Enumerations
@@ -154,12 +148,12 @@ sl_status_t sl_wfx_host_verify_pub_key(sl_wfx_securelink_exchange_pub_keys_ind_t
                                        const uint8_t* sl_mac_key,
                                        uint8_t *sl_host_pub_key)
 {
-  RTOS_ERR err;
+  osStatus_t err;
   sl_status_t status = SL_STATUS_OK;
   uint8_t shared_key_digest[92];
 
-  OSMutexPend(&wfx_securelink_rx_mutex, 0, OS_OPT_PEND_BLOCKING, 0, &err);
-  if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
+  err = osMutexAcquire(wfx_securelink_rx_mutex, portMAX_Delay);
+  if (err != osOK)
     return SL_STATUS_WIFI_SECURE_LINK_EXCHANGE_FAILED;
   }
 
@@ -218,8 +212,8 @@ sl_status_t sl_wfx_host_verify_pub_key(sl_wfx_securelink_exchange_pub_keys_ind_t
   sl_wfx_context->secure_link_nonce.tx_packet_count = 0;
 
   error_handler:
-  OSMutexPost(&wfx_securelink_rx_mutex, OS_OPT_POST_NONE, &err);
-  if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
+  err = osMutexRelease(wfx_securelink_rx_mutex);
+  if (err != osOK)
     printf("ERROR: wfx_securelink_rx_mutex. unable to post.\n");
   }
   return status;
@@ -242,14 +236,14 @@ sl_status_t sl_wfx_host_decode_secure_link_data(uint8_t* buffer,
                                                 uint32_t length,
                                                 uint8_t* session_key)
 {
-  RTOS_ERR err;
+  osStatus_t err;
   mbedtls_ccm_context ccm_context;
   sl_status_t status = SL_STATUS_SECURITY_DECRYPT_ERROR;
   int crypto_status;
   sl_wfx_nonce_t nonce = { 0, 0, 0 };
 
-  OSMutexPend(&wfx_securelink_rx_mutex, 0, OS_OPT_PEND_BLOCKING, 0, &err);
-  if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
+  err = osMutexAcquire(wfx_securelink_rx_mutex, portMAX_Delay);
+  if (err != osOK)
     return SL_STATUS_FAIL;
   }
 
@@ -274,8 +268,8 @@ sl_status_t sl_wfx_host_decode_secure_link_data(uint8_t* buffer,
 
   error_handler:
   mbedtls_ccm_free(&ccm_context);
-  OSMutexPost(&wfx_securelink_rx_mutex, OS_OPT_POST_NONE, &err);
-  if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
+  err = osMutexRelease(wfx_securelink_rx_mutex);
+  if (err != osOK)
     printf("ERROR: wfx_securelink_mutex. unable to post.\n");
   }
   return status;
@@ -305,8 +299,7 @@ sl_status_t sl_wfx_host_encode_secure_link_data(sl_wfx_generic_message_t* buffer
 sl_status_t sl_wfx_host_schedule_secure_link_renegotiation(void)
 {
   // call sl_wfx_secure_link_renegotiate_session_key() as soon as it makes sense for the host to do so
-  RTOS_ERR err;
-  OSTaskSemPost(&wfx_securelink_task_tcb, OS_OPT_POST_NONE, &err);
+  osSemaphoreRelease(wfx_securelink_sem);
   return SL_STATUS_OK;
 }
 

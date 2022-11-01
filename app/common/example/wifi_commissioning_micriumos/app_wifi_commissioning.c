@@ -30,6 +30,9 @@
 #include "app_wifi_events.h"
 #include "app_wifi_commissioning.h"
 #include "sl_wfx_host.h"
+#include "cmsis_os2.h"
+#include "sl_cmsis_os2_common.h"
+#include "sl_wfx_host_init.h"
 
 #define START_APP_TASK_PRIO              30u
 #define START_APP_TASK_STK_SIZE         600u
@@ -55,7 +58,7 @@ static void start_app_task(void *p_arg)
   RTOS_ERR  err;
   PP_UNUSED_PARAM(p_arg); // Prevent compiler warning.
 
-  OSSemPend(&wfx_init_sem, 0, OS_OPT_PEND_BLOCKING, 0, &err);
+  osSemaphoreAcquire(wfx_init_sem, osWaitForever);
   // Clear the console and buffer
   printf("Wi-Fi Commissioning Micrium  OS Example\r\n");
 

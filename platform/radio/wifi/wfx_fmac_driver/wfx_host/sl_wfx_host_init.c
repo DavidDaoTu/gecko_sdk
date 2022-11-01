@@ -27,6 +27,10 @@
 #include "gpiointerrupt.h"
 #include "sl_wfx_host_init.h"
 
+// notice
+#include "cmsis_os2.h"
+#include "sl_cmsis_os2_common.h"
+
 #ifdef SL_CATALOG_POWER_MANAGER_PRESENT
 #include "sl_power_manager.h"
 #endif
@@ -44,7 +48,10 @@ sl_wfx_context_t wifi;
 extern uint8_t wirq_irq_nb;
 #endif
 
-OS_SEM wfx_init_sem;
+// notice
+//OS_SEM wfx_init_sem;
+osSemaphoreId_t wfx_init_sem;
+static uint8_t  wfx_init_sem_cb[osSemaphoreCbSize];
 
 /// Start task stack.
 static CPU_STK start_task_stk[START_TASK_STK_SIZE];
@@ -54,18 +61,18 @@ static void    start_task(void *p_arg);
 
 static void wfx_interrupt(uint8_t intNo)
 {
-  RTOS_ERR err;
+  //RTOS_ERR err;
 
   (void)intNo;
-  if (wfx_wakeup_sem.Type == OS_OBJ_TYPE_SEM ) {
-    OSSemPost(&wfx_wakeup_sem, OS_OPT_POST_ALL, &err);
+  if (wfx_wakeup_sem != NULL) {
+        osSemaphoreRelease(wfx_wakeup_sem);
   }
 #ifdef SL_CATALOG_WFX_BUS_SPI_PRESENT
-  OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_RX, OS_OPT_POST_FLAG_SET, &err);
+  osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
 #endif
 #ifdef SL_CATALOG_WFX_BUS_SDIO_PRESENT
 #ifdef SLEEP_ENABLED
-  OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_RX, OS_OPT_POST_FLAG_SET, &err);
+  osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
 #endif
 #endif
 }
@@ -124,12 +131,16 @@ static void gpio_setup(void)
  ******************************************************************************/
 static void wifi_start(void)
 {
-  RTOS_ERR  err;
+  //RTOS_ERR  err;
   sl_status_t status;
 
   // Initialize the WF200
   status = sl_wfx_init(&wifi);
-  OSSemPost(&wfx_init_sem, OS_OPT_POST_ALL, &err);
+
+  // notice
+  //OSSemPost(&wfx_init_sem, OS_OPT_POST_ALL, &err);
+  osSemaphoreRelease(wfx_init_sem);
+
   printf("\033\143");
   printf("\033[3J");
   printf("FMAC Driver version    %s\r\n", FMAC_DRIVER_VERSION_STRING);
@@ -211,7 +222,18 @@ static void start_task(void *p_arg)
 void app_internal_wifi_init(void)
 {
   RTOS_ERR err;
-  OSSemCreate(&wfx_init_sem, "wfx init", 0, &err);
+  //notice
+  //OSSemCreate(&wfx_init_sem, "wfx init", 0, &err);
+  osSemaphoreAttr_t  sem_attr;
+
+  sem_attr.name = "WFX init";
+  sem_attr.cb_mem = wfx_init_sem_cb;
+  sem_attr.cb_size = osSemaphoreCbSize;
+  sem_attr.attr_bits = 0;
+
+  wfx_init_sem = osSemaphoreNew(1, 0, &sem_attr);
+  EFM_ASSERT(wfx_init_sem != NULL);
+
   OSTaskCreate(&start_task_tcb, // Create the Start Task.
                "Start Task",
                start_task,

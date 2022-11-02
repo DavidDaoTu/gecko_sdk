@@ -22,8 +22,13 @@ config_file:
   - override:
       component: "wfx_bus_spi"
       file_id: "sl_wfx_host_bus_pinout"
-    path: "config/brd2204a/spi/sl_wfx_host_bus_pinout.h"
+    path: "config/brd2204x/spi/sl_wfx_host_bus_pinout.h"
     condition: [brd2204a]
+  - override:
+      component: "wfx_bus_spi"
+      file_id: "sl_wfx_host_bus_pinout"
+    path: "config/brd2204x/spi/sl_wfx_host_bus_pinout.h"
+    condition: [brd2204c]
   - override:
       component: "wfx_bus_spi"
       file_id: "sl_wfx_host_bus_pinout"
@@ -44,6 +49,26 @@ config_file:
       file_id: "sl_wfx_host_bus_pinout"
     path: "config/brd416Xa/spi/sl_wfx_host_bus_pinout.h"
     condition: [brd4164a]
+  - override:
+      component: "wfx_bus_spi"
+      file_id: "sl_wfx_host_bus_pinout"
+    path: "config/brd4187x/spi/sl_wfx_host_bus_pinout.h"
+    condition: [brd4187a]
+  - override:
+      component: "wfx_bus_spi"
+      file_id: "sl_wfx_host_bus_pinout"
+    path: "config/brd4187x/spi/sl_wfx_host_bus_pinout.h"
+    condition: [brd4187b]
+  - override:
+      component: "wfx_bus_spi"
+      file_id: "sl_wfx_host_bus_pinout"
+    path: "config/brd4187x/spi/sl_wfx_host_bus_pinout.h"
+    condition: [brd4187c]
+  - override:
+      component: "wfx_bus_spi"
+      file_id: "sl_wfx_host_bus_pinout"
+    path: "config/brd4180x/spi/sl_wfx_host_bus_pinout.h"
+    condition: [brd4180a]
 template_contribution:
   - name: component_catalog
     value: wfx_bus_spi

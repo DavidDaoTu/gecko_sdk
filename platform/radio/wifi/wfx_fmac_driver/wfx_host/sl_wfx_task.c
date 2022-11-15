@@ -202,8 +202,8 @@ void sl_wfx_task_start()
   osThreadAttr_t     thread_attr;
   osEventFlagsAttr_t event_attr;
   osSemaphoreAttr_t  sem_attr;
-  // notice
-  osMutexAttr_t mutex_attr;
+  osMutexAttr_t      mutex_attr;
+
   mutex_attr.name = "WFX bus tx queue mutex";
   mutex_attr.cb_mem = wfx_bus_queue_mutex_cb;
   mutex_attr.cb_size = osMutexCbSize;
@@ -211,7 +211,6 @@ void sl_wfx_task_start()
 
   sl_wfx_tx_queue_mutex = osMutexNew(&mutex_attr);
   EFM_ASSERT(sl_wfx_tx_queue_mutex != NULL);
-  //
 
   event_attr.name = "WFX bus events";
   event_attr.cb_mem = wfx_bus_events_cb;

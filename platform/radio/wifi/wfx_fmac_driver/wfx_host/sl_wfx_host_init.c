@@ -35,8 +35,11 @@
 #include "sl_power_manager.h"
 #endif
 
-#define START_TASK_PRIO              30u
-#define START_TASK_STK_SIZE         512u
+// notice
+// #define START_TASK_PRIO              30u
+// #define START_TASK_STK_SIZE         512u
+#define START_TASK_PRIO   osPriorityRealtime
+#define START_TASK_SIZE   1024u
 
 #ifdef SL_CATALOG_WFX_SECURE_LINK_PRESENT
 extern void wfx_securelink_task_start(void);
@@ -53,10 +56,14 @@ extern uint8_t wirq_irq_nb;
 osSemaphoreId_t wfx_init_sem;
 static uint8_t  wfx_init_sem_cb[osSemaphoreCbSize];
 
+// notice
+__ALIGNED(8) static uint8_t start_task_stack[(START_TASK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+__ALIGNED(4) static uint8_t start_task_cb[osThreadCbSize];
+
 /// Start task stack.
-static CPU_STK start_task_stk[START_TASK_STK_SIZE];
+// static CPU_STK start_task_stk[START_TASK_STK_SIZE];
 /// Start task TCB.
-static OS_TCB  start_task_tcb;
+// static OS_TCB  start_task_tcb;
 static void    start_task(void *p_arg);
 
 static void wfx_interrupt(uint8_t intNo)
@@ -180,6 +187,7 @@ static void wifi_start(void)
 #endif
 }
 
+// notice
 static void start_task(void *p_arg)
 {
   RTOS_ERR  err;
@@ -225,6 +233,9 @@ void app_internal_wifi_init(void)
   //notice
   //OSSemCreate(&wfx_init_sem, "wfx init", 0, &err);
   osSemaphoreAttr_t  sem_attr;
+  // notice
+  osThreadId_t       thread_id;
+  osThreadAttr_t     thread_attr;
 
   sem_attr.name = "WFX init";
   sem_attr.cb_mem = wfx_init_sem_cb;
@@ -234,18 +245,32 @@ void app_internal_wifi_init(void)
   wfx_init_sem = osSemaphoreNew(1, 0, &sem_attr);
   EFM_ASSERT(wfx_init_sem != NULL);
 
-  OSTaskCreate(&start_task_tcb, // Create the Start Task.
-               "Start Task",
-               start_task,
-               DEF_NULL,
-               START_TASK_PRIO,
-               &start_task_stk[0],
-               (START_TASK_STK_SIZE / 10u),
-               START_TASK_STK_SIZE,
-               0u,
-               0u,
-               DEF_NULL,
-               (OS_OPT_TASK_STK_CLR),
-               &err);
-  APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
+  // notice
+  // OSTaskCreate(&start_task_tcb, // Create the Start Task.
+  //              "Start Task",
+  //              start_task,
+  //              DEF_NULL,
+  //              START_TASK_PRIO,
+  //              &start_task_stk[0],
+  //              (START_TASK_STK_SIZE / 10u),
+  //              START_TASK_STK_SIZE,
+  //              0u,
+  //              0u,
+  //              DEF_NULL,
+  //              (OS_OPT_TASK_STK_CLR),
+  //              &err);
+  // APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
+
+  thread_attr.name = "Start Task";
+  thread_attr.priority = START_TASK_PRIO;
+  thread_attr.stack_mem = start_task_stack;
+  thread_attr.stack_size = START_TASK_SIZE;
+  thread_attr.cb_mem = start_task_cb;
+  thread_attr.cb_size = osThreadCbSize;
+  thread_attr.attr_bits = 0u;
+  thread_attr.tz_module = 0u;
+
+  // notice
+  thread_id = osThreadNew(start_task, NULL, &thread_attr);
+  EFM_ASSERT(thread_id != NULL);
 }

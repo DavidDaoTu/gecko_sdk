@@ -96,6 +96,7 @@ sl_status_t sl_wfx_host_setup_memory_pools(void)
   return SL_STATUS_OK;
 }
 
+// notice
 /**************************************************************************//**
  * WFX FMAC driver host interface initialization
  *****************************************************************************/

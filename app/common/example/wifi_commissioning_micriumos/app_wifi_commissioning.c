@@ -58,7 +58,7 @@ static void start_app_task(void *p_arg)
   RTOS_ERR  err;
   PP_UNUSED_PARAM(p_arg); // Prevent compiler warning.
 
-  osSemaphoreAcquire(wfx_init_sem, osWaitForever);
+  osSemaphoreAcquire(sl_wfx_init_sem, osWaitForever);
   // Clear the console and buffer
   printf("Wi-Fi Commissioning Micrium  OS Example\r\n");
 

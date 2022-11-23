@@ -29,25 +29,23 @@
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
 
-#define WFX_BUS_TASK_PRIO             osPriorityRealtime
-#define WFX_BUS_STACK_SIZE            1024u
+#define SL_WFX_BUS_TASK_PRIO             osPriorityRealtime
+#define SL_WFX_BUS_STACK_SIZE            1024u
 
-__ALIGNED(8) static uint8_t wfx_bus_stack[(WFX_BUS_STACK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
-__ALIGNED(4) static uint8_t wfx_bus_task_cb[osThreadCbSize];
+__ALIGNED(8) static uint8_t sl_wfx_bus_stack[(SL_WFX_BUS_STACK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+__ALIGNED(4) static uint8_t sl_wfx_bus_task_cb[osThreadCbSize];
 
-// notice
-osMutexId_t              sl_wfx_tx_queue_mutex;
-sl_wfx_packet_queue_t    sl_wfx_tx_queue_context;
+osMutexId_t               sl_wfx_tx_queue_mutex;
+sl_wfx_packet_queue_t     sl_wfx_tx_queue_context;
+osEventFlagsId_t          sl_wfx_bus_events;
+sl_wfx_frame_q_item       sl_wfx_bus_tx_frame;
+osSemaphoreId_t           sl_wfx_bus_tx_complete;
 
-osEventFlagsId_t      wfx_bus_events;
-sl_wfx_frame_q_item   wfx_bus_tx_frame;
-osSemaphoreId_t       wfx_bus_tx_complete;
 /// Flag to indicate receive frames is currently running.
-static uint8_t  wfx_bus_events_cb[osEventFlagsCbSize];
-static uint8_t  wfx_bus_tc_complete_cb[osSemaphoreCbSize];
-static uint8_t wfx_bus_queue_mutex_cb[osMutexCbSize];
+static uint8_t  sl_wfx_bus_events_cb[osEventFlagsCbSize];
+static uint8_t  sl_wfx_bus_tx_complete_cb[osSemaphoreCbSize];
+static uint8_t  sl_wfx_bus_queue_mutex_cb[osMutexCbSize];
 
-// notice
 static void        sl_wfx_task_entry (void *p_arg);
 static sl_status_t sl_wfx_rx_process (uint16_t control_register);
 static sl_status_t sl_wfx_tx_process (void);
@@ -72,23 +70,22 @@ static void sl_wfx_task_entry(void *p_arg)
     if (GPIO_PinInGet(SL_WFX_HOST_PINOUT_GPIO_WIRQ_PORT, SL_WFX_HOST_PINOUT_GPIO_WIRQ_PIN))
 #endif
     {
-      osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
+      osEventFlagsSet(sl_wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
     }
 #endif
     /*Wait for an event*/
-    flags = osEventFlagsWait(wfx_bus_events,
+    flags = osEventFlagsWait(sl_wfx_bus_events,
                              SL_WFX_BUS_EVENT_FLAG_RX | SL_WFX_BUS_EVENT_FLAG_TX,
                              osFlagsWaitAny,
                              osWaitForever);
 
-    // notice
     if (flags & SL_WFX_BUS_EVENT_FLAG_TX) {
       /* Process TX packets */
-      sl_wfx_tx_process(); // maybe thay thế for transmit_frames();
+      sl_wfx_tx_process();
     }
     if (flags & SL_WFX_BUS_EVENT_FLAG_RX) {
       /* Process RX packets */
-      sl_wfx_rx_process(control_register); // thay the receive_frames();
+      sl_wfx_rx_process(control_register);
 #ifdef SL_WFX_USE_SDIO
       /* Reenable interrupt (req for sdio)*/
       sl_wfx_host_enable_platform_interrupt();
@@ -97,7 +94,6 @@ static void sl_wfx_task_entry(void *p_arg)
   }
 }
 
-// notice
 /***************************************************************************//**
  * Receives frames from the WF200.
  ******************************************************************************/
@@ -108,7 +104,7 @@ static sl_status_t sl_wfx_rx_process(uint16_t control_register)
   result = sl_wfx_receive_frame(&control_register);
   if ((control_register & SL_WFX_CONT_NEXT_LEN_MASK) != 0) {
     /* if a packet is still available in the WF200, set an RX event */
-    osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
+    osEventFlagsSet(sl_wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
   }
 
   return result;
@@ -136,7 +132,7 @@ static sl_status_t sl_wfx_tx_process(void)
 
   if (result != SL_STATUS_OK) {
     /* If the packet is not successfully sent, set the associated event and return */
-    osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_TX);
+    osEventFlagsSet(sl_wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_TX);
     osMutexRelease(sl_wfx_tx_queue_mutex);
     return SL_STATUS_FULL;
   }
@@ -154,7 +150,7 @@ static sl_status_t sl_wfx_tx_process(void)
 
   /* If a packet is available, set the associated event */
   if (sl_wfx_tx_queue_context.head_ptr != NULL) {
-    osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_TX);
+    osEventFlagsSet(sl_wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_TX);
   }
 
   /* Release TX queue mutex */
@@ -163,41 +159,11 @@ static sl_status_t sl_wfx_tx_process(void)
   return result;
 }
 
-// notice?
 /***************************************************************************//**
  * Creates WF200 bus communication task.
  ******************************************************************************/
 void sl_wfx_task_start()
 {
-  // RTOS_ERR err;
-  // OSFlagCreate(&bus_events, "bus events", 0, &err);
-  // OSMutexCreate(&sl_wfx_tx_queue_mutex, "tx queue mutex", &err);
-  // OSSemCreate(&bus_tx_complete_sem, "bus tx comp", 0, &err);
-
-  // sl_wfx_tx_queue_context.head_ptr = NULL;
-  // sl_wfx_tx_queue_context.tail_ptr = NULL;
-
-  // OSTaskCreate(&sl_wfx_bus_task_tcb,
-  //              "WFX bus Task",
-  //              sl_wfx_task_entry,
-  //              DEF_NULL,
-  //              SL_WFX_BUS_TASK_PRIO,
-  //              &sl_wfx_bus_task_stk[0],
-  //              (SL_WFX_BUS_TASK_STK_SIZE / 10u),
-  //              SL_WFX_BUS_TASK_STK_SIZE,
-  //              0u,
-  //              0u,
-  //              DEF_NULL,
-  //              (OS_OPT_TASK_STK_CLR),
-  //              &err);
-  // // Check error code.
-  // APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
-
-  //notice
-  // OSMutexCreate(&sl_wfx_tx_queue_mutex, "tx queue mutex", &err);
-  // sl_wfx_tx_queue_context.head_ptr = NULL;
-  // sl_wfx_tx_queue_context.tail_ptr = NULL;
-
   osThreadId_t       thread_id;
   osThreadAttr_t     thread_attr;
   osEventFlagsAttr_t event_attr;
@@ -205,7 +171,7 @@ void sl_wfx_task_start()
   osMutexAttr_t      mutex_attr;
 
   mutex_attr.name = "WFX bus tx queue mutex";
-  mutex_attr.cb_mem = wfx_bus_queue_mutex_cb;
+  mutex_attr.cb_mem = sl_wfx_bus_queue_mutex_cb;
   mutex_attr.cb_size = osMutexCbSize;
   mutex_attr.attr_bits = 0;
 
@@ -213,31 +179,30 @@ void sl_wfx_task_start()
   EFM_ASSERT(sl_wfx_tx_queue_mutex != NULL);
 
   event_attr.name = "WFX bus events";
-  event_attr.cb_mem = wfx_bus_events_cb;
+  event_attr.cb_mem = sl_wfx_bus_events_cb;
   event_attr.cb_size = osEventFlagsCbSize;
   event_attr.attr_bits = 0;
 
-  wfx_bus_events =  osEventFlagsNew(&event_attr);
-  EFM_ASSERT(wfx_bus_events != NULL);
+  sl_wfx_bus_events =  osEventFlagsNew(&event_attr);
+  EFM_ASSERT(sl_wfx_bus_events != NULL);
 
   sem_attr.name = "WFX bus TX complete";
-  sem_attr.cb_mem =wfx_bus_tc_complete_cb;
+  sem_attr.cb_mem = sl_wfx_bus_tx_complete_cb;
   sem_attr.cb_size = osSemaphoreCbSize;
   sem_attr.attr_bits = 0;
 
-  wfx_bus_tx_complete = osSemaphoreNew(1, 0, &sem_attr);
-  EFM_ASSERT(wfx_bus_tx_complete != NULL);
+  sl_wfx_bus_tx_complete = osSemaphoreNew(1, 0, &sem_attr);
+  EFM_ASSERT(sl_wfx_bus_tx_complete != NULL);
 
   thread_attr.name = "WFX bus task";
-  thread_attr.priority = WFX_BUS_TASK_PRIO;
-  thread_attr.stack_mem = wfx_bus_stack;
-  thread_attr.stack_size = WFX_BUS_STACK_SIZE;
-  thread_attr.cb_mem = wfx_bus_task_cb;
+  thread_attr.priority = SL_WFX_BUS_TASK_PRIO;
+  thread_attr.stack_mem = sl_wfx_bus_stack;
+  thread_attr.stack_size = SL_WFX_BUS_STACK_SIZE;
+  thread_attr.cb_mem = sl_wfx_bus_task_cb;
   thread_attr.cb_size = osThreadCbSize;
   thread_attr.attr_bits = 0u;
   thread_attr.tz_module = 0u;
 
-  // notice
   thread_id = osThreadNew(sl_wfx_task_entry, NULL, &thread_attr);
   EFM_ASSERT(thread_id != NULL);
 }

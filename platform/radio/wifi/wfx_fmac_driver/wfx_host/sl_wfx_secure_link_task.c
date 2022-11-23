@@ -25,39 +25,39 @@
 #include "secure_link/sl_wfx_secure_link.h"
 
 // Securelink Task Configurations
-#define WFX_SECURELINK_TASK_PRIO       osPriorityLow
-#define WFX_SECURELINK_STACK_SIZE      512u
+#define SL_WFX_SECURELINK_TASK_PRIO       osPriorityLow
+#define SL_WFX_SECURELINK_STACK_SIZE      512u
 
-__ALIGNED(8) static uint8_t wfx_securelink_stack[(WFX_SECURELINK_STACK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
-__ALIGNED(4) static uint8_t wfx_securelink_task_cb[osThreadCbSize];
+__ALIGNED(8) static uint8_t sl_wfx_securelink_stack[(SL_WFX_SECURELINK_STACK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+__ALIGNED(4) static uint8_t sl_wfx_securelink_task_cb[osThreadCbSize];
 
-static uint8_t wfx_securelink_mutex_cb[osMutexCbSize];
-static uint8_t wfx_securelink_sem_cb[osSemaphoreCbSize];
+static uint8_t sl_wfx_securelink_mutex_cb[osMutexCbSize];
+static uint8_t sl_wfx_securelink_sem_cb[osSemaphoreCbSize];
 
-osMutexId_t wfx_securelink_rx_mutex;
-osSemaphoreId_t wfx_securelink_sem;
+osMutexId_t sl_wfx_securelink_rx_mutex;
+osSemaphoreId_t sl_wfx_securelink_sem;
 
 /*
  * The task that implements the securelink renegotiation with WFX.
  */
-static void wfx_securelink_task(void *p_arg)
+static void sl_wfx_securelink_task(void *p_arg)
 {
   sl_status_t result;
   (void)p_arg;
 
   for (;; ) {
-    osSemaphoreAcquire(wfx_securelink_sem, portMAX_Delay);
+    osSemaphoreAcquire(sl_wfx_securelink_sem, portMAX_Delay);
     result = sl_wfx_secure_link_renegotiate_session_key();
     if (result != SL_STATUS_OK) {
       printf ("WFX session key negotiation error %lu\n",result);
     }
   }
 }
-// notice
+
 /***************************************************************************//**
  * @brief Creates WF200 securelink key renegotiation task.
  ******************************************************************************/
-void wfx_securelink_task_start(void)
+void sl_wfx_securelink_task_start(void)
 {
   osThreadId_t       thread_id;
   osThreadAttr_t     thread_attr;
@@ -65,30 +65,30 @@ void wfx_securelink_task_start(void)
   osSemaphoreAttr_t  sem_attr
   
   mutex_attr.name = "WFX SecureLink RX mutex";
-  mutex_attr.cb_mem = wfx_securelink_mutex_cb;
+  mutex_attr.cb_mem = sl_wfx_securelink_mutex_cb;
   mutex_attr.cb_size = osMutexCbSize;
   mutex_attr.attr_bits = 0;
   
-  wfx_securelink_rx_mutex = osMutexNew(&mutex_attr);
-  EFM_ASSERT(wfx_securelink_rx_mutex != NULL);
+  sl_wfx_securelink_rx_mutex = osMutexNew(&mutex_attr);
+  EFM_ASSERT(sl_wfx_securelink_rx_mutex != NULL);
   
   sem_attr.name = "WFX SecureLink semaphore";
-  sem_attr.cb_mem = wfx_securelink_sem_cb;
+  sem_attr.cb_mem = sl_wfx_securelink_sem_cb;
   sem_attr.cb_size = osSemaphoreCbSize;
   sem_attr.attr_bits = 0;
   
-  wfx_securelink_sem = osSemaphoreNew(&sem_attr);
-  EFM_ASSERT(wfx_securelink_sem != NULL);
+  sl_wfx_securelink_sem = osSemaphoreNew(&sem_attr);
+  EFM_ASSERT(sl_wfx_securelink_sem != NULL);
   
   thread_attr.name = "WFX SecureLink task";
-  thread_attr.priority = WFX_SECURELINK_TASK_PRIO;
-  thread_attr.stack_mem = wfx_securelink_task;
-  thread_attr.stack_size = WFX_SECURELINK_STACK_SIZE;
-  thread_attr.cb_mem = wfx_securelink_task_cb;
+  thread_attr.priority = SL_WFX_SECURELINK_TASK_PRIO;
+  thread_attr.stack_mem = sl_wfx_securelink_task;
+  thread_attr.stack_size = SL_WFX_SECURELINK_STACK_SIZE;
+  thread_attr.cb_mem = sl_wfx_securelink_task_cb;
   thread_attr.cb_size = osThreadCbSize;
   thread_attr.attr_bits = 0u;
   thread_attr.tz_module = 0u;
   
-  thread_id = osThreadNew(wfx_bus_task, NULL, &thread_attr);
+  thread_id = osThreadNew(sl_wfx_bus_task, NULL, &thread_attr);
   EFM_ASSERT(thread_id != NULL);
 }

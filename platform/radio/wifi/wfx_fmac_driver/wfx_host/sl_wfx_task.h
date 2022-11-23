@@ -36,8 +36,8 @@ typedef struct {
 } sl_wfx_frame_q_item;
 
 extern sl_wfx_frame_q_item   bus_tx_frame;
-extern osSemaphoreId_t       wfx_bus_tx_complete;
-extern osEventFlagsId_t      wfx_bus_events;
+extern osSemaphoreId_t       sl_wfx_bus_tx_complete;
+extern osEventFlagsId_t      sl_wfx_bus_events;
 extern osMutexId_t           sl_wfx_tx_queue_mutex;
 extern sl_wfx_packet_queue_t sl_wfx_tx_queue_context;
 #ifdef __cplusplus
@@ -51,7 +51,7 @@ void sl_wfx_task_start (void);
 /**************************************************************************//**
  * Returns status of wfx receive frames.
  *****************************************************************************/
-bool wfx_bus_is_receive_processing (void);
+bool sl_wfx_bus_is_receive_processing (void);
 #ifdef __cplusplus
 }
 #endif

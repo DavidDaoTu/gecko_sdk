@@ -26,8 +26,6 @@
 #include "sl_wfx_host_pinout.h"
 #include "gpiointerrupt.h"
 #include "sl_wfx_host_init.h"
-
-// notice
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
 
@@ -35,14 +33,11 @@
 #include "sl_power_manager.h"
 #endif
 
-// notice
-// #define START_TASK_PRIO              30u
-// #define START_TASK_STK_SIZE         512u
 #define START_TASK_PRIO   osPriorityRealtime
 #define START_TASK_SIZE   1024u
 
 #ifdef SL_CATALOG_WFX_SECURE_LINK_PRESENT
-extern void wfx_securelink_task_start(void);
+extern void sl_wfx_securelink_task_start(void);
 #endif
 
 sl_wfx_context_t wifi;
@@ -51,35 +46,28 @@ sl_wfx_context_t wifi;
 extern uint8_t wirq_irq_nb;
 #endif
 
-// notice
-//OS_SEM wfx_init_sem;
-osSemaphoreId_t wfx_init_sem;
-static uint8_t  wfx_init_sem_cb[osSemaphoreCbSize];
-
-// notice
-__ALIGNED(8) static uint8_t start_task_stack[(START_TASK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
-__ALIGNED(4) static uint8_t start_task_cb[osThreadCbSize];
+osSemaphoreId_t sl_wfx_init_sem;
+static uint8_t  sl_wfx_init_sem_cb[osSemaphoreCbSize];
 
 /// Start task stack.
-// static CPU_STK start_task_stk[START_TASK_STK_SIZE];
+__ALIGNED(8) static uint8_t start_task_stack[(START_TASK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
 /// Start task TCB.
-// static OS_TCB  start_task_tcb;
+__ALIGNED(4) static uint8_t start_task_cb[osThreadCbSize];
+
 static void    start_task(void *p_arg);
 
-static void wfx_interrupt(uint8_t intNo)
+static void    sl_wfx_interrupt(uint8_t intNo)
 {
-  //RTOS_ERR err;
-
   (void)intNo;
-  if (wfx_wakeup_sem != NULL) {
-        osSemaphoreRelease(wfx_wakeup_sem);
+  if (sl_wfx_wakeup_sem != NULL) {
+        osSemaphoreRelease(sl_wfx_wakeup_sem);
   }
 #ifdef SL_CATALOG_WFX_BUS_SPI_PRESENT
-  osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
+  osEventFlagsSet(sl_wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
 #endif
 #ifdef SL_CATALOG_WFX_BUS_SDIO_PRESENT
 #ifdef SLEEP_ENABLED
-  osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
+  osEventFlagsSet(sl_wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
 #endif
 #endif
 }
@@ -114,12 +102,12 @@ static void gpio_setup(void)
     }
   }
 
-  GPIOINT_CallbackRegister(wirq_irq_nb, (GPIOINT_IrqCallbackPtr_t)wfx_interrupt);
+  GPIOINT_CallbackRegister(wirq_irq_nb, (GPIOINT_IrqCallbackPtr_t)sl_wfx_interrupt);
 #endif
 
 #ifdef WGM160PX22KGA2
   GPIO_PinModeSet(SL_WFX_HOST_PINOUT_GPIO_WIRQ_PORT, SL_WFX_HOST_PINOUT_GPIO_WIRQ_PIN, gpioModeInputPull, 0);
-  GPIOINT_CallbackRegister(SL_WFX_HOST_PINOUT_GPIO_WIRQ_PIN, (GPIOINT_IrqCallbackPtr_t)wfx_interrupt);
+  GPIOINT_CallbackRegister(SL_WFX_HOST_PINOUT_GPIO_WIRQ_PIN, (GPIOINT_IrqCallbackPtr_t)sl_wfx_interrupt);
   GPIO_PinModeSet(gpioPortD, 0, gpioModeDisabled, 1);
   GPIO_PinModeSet(gpioPortD, 1, gpioModeDisabled, 1);
   GPIO_PinModeSet(gpioPortD, 2, gpioModeDisabled, 1);
@@ -128,7 +116,7 @@ static void gpio_setup(void)
   GPIO_PinModeSet(SL_WFX_HOST_PINOUT_LP_CLK_PORT, SL_WFX_HOST_PINOUT_LP_CLK_PIN, gpioModePushPull, 0);
 #endif
 
-  (void)wfx_interrupt;
+  (void)sl_wfx_interrupt;
 
   GPIOINT_Init();
 }
@@ -138,15 +126,12 @@ static void gpio_setup(void)
  ******************************************************************************/
 static void wifi_start(void)
 {
-  //RTOS_ERR  err;
   sl_status_t status;
 
   // Initialize the WF200
   status = sl_wfx_init(&wifi);
 
-  // notice
-  //OSSemPost(&wfx_init_sem, OS_OPT_POST_ALL, &err);
-  osSemaphoreRelease(wfx_init_sem);
+  osSemaphoreRelease(sl_wfx_init_sem);
 
   printf("\033\143");
   printf("\033[3J");
@@ -187,7 +172,6 @@ static void wifi_start(void)
 #endif
 }
 
-// notice
 static void start_task(void *p_arg)
 {
   RTOS_ERR  err;
@@ -209,7 +193,7 @@ static void start_task(void *p_arg)
   //start wfx bus communication task.
   sl_wfx_task_start();
 #ifdef SL_CATALOG_WFX_SECURE_LINK_PRESENT
-  wfx_securelink_task_start(); // start securelink key renegotiation task
+  sl_wfx_securelink_task_start(); // start securelink key renegotiation task
 #endif //SL_CATALOG_WFX_SECURE_LINK_PRESENT
 
 #ifdef SL_CATALOG_POWER_MANAGER_PRESENT
@@ -221,7 +205,7 @@ static void start_task(void *p_arg)
   wifi_start();
 
   // Delete the init thread.
-  OSTaskDel(0, &err);
+  osThreadExit();
 }
 
 /**************************************************************************//**
@@ -229,37 +213,17 @@ static void start_task(void *p_arg)
  *****************************************************************************/
 void app_internal_wifi_init(void)
 {
-  RTOS_ERR err;
-  //notice
-  //OSSemCreate(&wfx_init_sem, "wfx init", 0, &err);
   osSemaphoreAttr_t  sem_attr;
-  // notice
   osThreadId_t       thread_id;
   osThreadAttr_t     thread_attr;
 
   sem_attr.name = "WFX init";
-  sem_attr.cb_mem = wfx_init_sem_cb;
+  sem_attr.cb_mem = sl_wfx_init_sem_cb;
   sem_attr.cb_size = osSemaphoreCbSize;
   sem_attr.attr_bits = 0;
 
-  wfx_init_sem = osSemaphoreNew(1, 0, &sem_attr);
-  EFM_ASSERT(wfx_init_sem != NULL);
-
-  // notice
-  // OSTaskCreate(&start_task_tcb, // Create the Start Task.
-  //              "Start Task",
-  //              start_task,
-  //              DEF_NULL,
-  //              START_TASK_PRIO,
-  //              &start_task_stk[0],
-  //              (START_TASK_STK_SIZE / 10u),
-  //              START_TASK_STK_SIZE,
-  //              0u,
-  //              0u,
-  //              DEF_NULL,
-  //              (OS_OPT_TASK_STK_CLR),
-  //              &err);
-  // APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
+  sl_wfx_init_sem = osSemaphoreNew(1, 0, &sem_attr);
+  EFM_ASSERT(sl_wfx_init_sem != NULL);
 
   thread_attr.name = "Start Task";
   thread_attr.priority = START_TASK_PRIO;
@@ -270,7 +234,6 @@ void app_internal_wifi_init(void)
   thread_attr.attr_bits = 0u;
   thread_attr.tz_module = 0u;
 
-  // notice
   thread_id = osThreadNew(start_task, NULL, &thread_attr);
   EFM_ASSERT(thread_id != NULL);
 }

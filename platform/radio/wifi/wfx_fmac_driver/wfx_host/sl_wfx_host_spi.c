@@ -52,7 +52,7 @@ static uint32_t            dummy_tx_data;
 static uint32_t            usart_clock;
 static uint32_t            usart_rx_signal;
 static uint32_t            usart_tx_signal;
-static bool spi_enabled = false;
+static bool                spi_enabled = false;
 
 uint8_t wirq_irq_nb = SL_WFX_HOST_PINOUT_SPI_WIRQ_PIN;
 

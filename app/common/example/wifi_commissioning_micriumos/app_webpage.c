@@ -45,12 +45,15 @@
 #include "sl_wfx_host.h"
 #include "app_wifi_events.h"
 #include "app_webpage.h"
+#include "cmsis_os2.h"
+#include "sl_cmsis_os2_common.h"
 
 #ifdef IPERF_SERVER
 #include "lwip/apps/lwiperf.h"
 #endif
 
-OS_SEM         scan_sem;
+osSemaphoreId_t         scan_sem;
+static uint8_t scan_sem_cb[osSemaphoreCbSize];
 
 extern scan_result_list_t scan_list[];
 extern uint8_t scan_count_web;
@@ -383,7 +386,7 @@ static const char *start_scan_cgi_handler(int index, int num_params,
                                           char *pc_param[], char *pc_value[])
 {
   sl_status_t result;
-  RTOS_ERR err;
+  osStatus_t status;
 
   (void)index;
   (void)num_params;
@@ -393,11 +396,13 @@ static const char *start_scan_cgi_handler(int index, int num_params,
   // Reset scan list
   scan_count_web = 0;
   memset(scan_list, 0, sizeof(scan_result_list_t) * SL_WFX_MAX_SCAN_RESULTS);
-  OSSemSet(&scan_sem, 0, &err);  // perform a scan on every Wi-Fi channel in active mode
+  //OSSemSet(&scan_sem, 0, &err);  // perform a scan on every Wi-Fi channel in active mode
+  //osSemaphoreGetCount(scan_sem);
+  printf("%d\n", osSemaphoreGetCount(scan_sem));
   result = sl_wfx_send_scan_command(WFM_SCAN_MODE_ACTIVE, NULL, 0, NULL, 0, NULL, 0, NULL);
   if ((result == SL_STATUS_OK) || (result == SL_STATUS_WIFI_WARNING)) {
-    OSSemPend(&scan_sem, 5000, OS_OPT_PEND_BLOCKING, NULL, &err);
-    if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
+    status = osSemaphoreAcquire(scan_sem, 5000);
+    if (status != osOK) {
       printf("Scan command timeout\r\n");
     }
   }
@@ -835,7 +840,15 @@ sl_status_t webpage_start(void)
 {
   RTOS_ERR err;
 
-  OSSemCreate(&scan_sem, "wifi_scan_sem", 0, &err);
+  osSemaphoreAttr_t  sem_attr;
+
+  sem_attr.name = "wifi_scan_sem";
+  sem_attr.cb_mem = scan_sem_cb;
+  sem_attr.cb_size = osSemaphoreCbSize;
+  sem_attr.attr_bits = 0;
+  scan_sem = osSemaphoreNew(1, 0, &sem_attr);
+  EFM_ASSERT(scan_sem != NULL);
+
   OSTaskCreate(&webpage_start_task_tcb,
                "Webpage Start Task",
                webpage_start_task,

@@ -205,6 +205,7 @@ static void start_task(void *p_arg)
   wifi_start();
 
   // Delete the init thread.
+  //OSTaskDel(0, &err);
   osThreadExit();
 }
 

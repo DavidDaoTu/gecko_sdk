@@ -36,7 +36,7 @@
 // Event Task Configurations
 #define WFX_EVENTS_TASK_PRIO              21u
 #define WFX_EVENTS_TASK_STK_SIZE        1024u
-#define WFX_EVENTS_NB_MAX                 10u
+#define WFX_EVENTS_NB_MAX                  5u//10u
 #define MSG_Q_MAXSIZE                   2048u
 
 void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect);
@@ -56,7 +56,7 @@ extern char softap_ssid[32 + 1];
 
 osMessageQueueId_t  wifi_events;
 static uint8_t      wifi_events_cb[osMessageQueueCbSize];
-static uint32_t     msgqueue_mq[WFX_EVENTS_NB_MAX];
+//static uint32_t     msgqueue_mq[WFX_EVENTS_NB_MAX];
 scan_result_list_t  scan_list[SL_WFX_MAX_SCAN_RESULTS];
 uint8_t             scan_count_web = 0;
 
@@ -504,9 +504,10 @@ void app_wifi_events_start(void)
   msq_attr.cb_mem = wifi_events_cb;
   msq_attr.cb_size = osMessageQueueCbSize;
   msq_attr.attr_bits = 0;
-  msq_attr.mq_mem = &msgqueue_mq;
+  //msq_attr.mq_mem = &msgqueue_mq;
+  msq_attr.mq_mem = NULL;
   msq_attr.mq_size = WFX_EVENTS_NB_MAX * MSG_Q_MAXSIZE;
-  wifi_events = osMessageQueueNew(WFX_EVENTS_NB_MAX, 2048, &msq_attr);
+  wifi_events = osMessageQueueNew(WFX_EVENTS_NB_MAX, MSG_Q_MAXSIZE, &msq_attr);
   EFM_ASSERT(wifi_events != NULL);
 
   OSTaskCreate(&wfx_events_task_tcb,

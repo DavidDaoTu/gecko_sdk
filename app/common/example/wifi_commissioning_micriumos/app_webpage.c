@@ -397,11 +397,11 @@ static const char *start_scan_cgi_handler(int index, int num_params,
   scan_count_web = 0;
   memset(scan_list, 0, sizeof(scan_result_list_t) * SL_WFX_MAX_SCAN_RESULTS);
   //OSSemSet(&scan_sem, 0, &err);  // perform a scan on every Wi-Fi channel in active mode
-  //osSemaphoreGetCount(scan_sem);
-  printf("%d\n", osSemaphoreGetCount(scan_sem));
+  osSemaphoreGetCount(scan_sem);
+  //printf("%d\n", osSemaphoreGetCount(scan_sem));
   result = sl_wfx_send_scan_command(WFM_SCAN_MODE_ACTIVE, NULL, 0, NULL, 0, NULL, 0, NULL);
   if ((result == SL_STATUS_OK) || (result == SL_STATUS_WIFI_WARNING)) {
-    status = osSemaphoreAcquire(scan_sem, 5000);
+    status = osSemaphoreAcquire(scan_sem, osWaitForever);
     if (status != osOK) {
       printf("Scan command timeout\r\n");
     }

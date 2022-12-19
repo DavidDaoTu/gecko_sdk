@@ -61,8 +61,8 @@ void sl_wfx_securelink_task_start(void)
 {
   osThreadId_t       thread_id;
   osThreadAttr_t     thread_attr;
-  osMutexAttr_t      mutex_attr
-  osSemaphoreAttr_t  sem_attr
+  osMutexAttr_t      mutex_attr;
+  osSemaphoreAttr_t  sem_attr;
   
   mutex_attr.name = "WFX SecureLink RX mutex";
   mutex_attr.cb_mem = sl_wfx_securelink_mutex_cb;

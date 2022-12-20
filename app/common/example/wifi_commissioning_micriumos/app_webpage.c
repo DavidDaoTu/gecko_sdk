@@ -52,16 +52,16 @@
 #include "lwip/apps/lwiperf.h"
 #endif
 
-osSemaphoreId_t         scan_sem;
-static uint8_t scan_sem_cb[osSemaphoreCbSize];
-
-extern scan_result_list_t scan_list[];
-extern uint8_t scan_count_web;
-
-static void netif_config(void);
 
 #define WEBPAGE_START_TASK_PRIO              22u
 #define WEBPAGE_START_TASK_STK_SIZE         800u
+
+osSemaphoreId_t           scan_sem;
+static uint8_t            scan_sem_cb[osSemaphoreCbSize];
+extern scan_result_list_t scan_list[];
+extern uint8_t            scan_count_web;
+
+static void netif_config(void);
 
 /// LwIP station network interface structure.
 struct netif sta_netif;
@@ -125,10 +125,10 @@ uint8_t ap_gw_addr2 = AP_GW_ADDR2_DEFAULT;
 /// AP gateway IP octet 3.
 uint8_t ap_gw_addr3 = AP_GW_ADDR3_DEFAULT;
 
-/// Webpage start task stack
-static CPU_STK webpage_start_task_stk[WEBPAGE_START_TASK_STK_SIZE];
-/// Webpage start task TCB
-static OS_TCB webpage_start_task_tcb;
+// Webpage start task stack
+__ALIGNED(8) static uint8_t webpage_start_stask[(WEBPAGE_START_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+// Webpage start task TCB
+__ALIGNED(4) static uint8_t webpage_start_task_cb[osThreadCbSize];
 
 // Connection parameters
 char wlan_ssid[32 + 1]                     = WLAN_SSID_DEFAULT;
@@ -396,9 +396,6 @@ static const char *start_scan_cgi_handler(int index, int num_params,
   // Reset scan list
   scan_count_web = 0;
   memset(scan_list, 0, sizeof(scan_result_list_t) * SL_WFX_MAX_SCAN_RESULTS);
-  //OSSemSet(&scan_sem, 0, &err);  // perform a scan on every Wi-Fi channel in active mode
-  osSemaphoreGetCount(scan_sem);
-  //printf("%d\n", osSemaphoreGetCount(scan_sem));
   result = sl_wfx_send_scan_command(WFM_SCAN_MODE_ACTIVE, NULL, 0, NULL, 0, NULL, 0, NULL);
   if ((result == SL_STATUS_OK) || (result == SL_STATUS_WIFI_WARNING)) {
     status = osSemaphoreAcquire(scan_sem, osWaitForever);
@@ -838,9 +835,9 @@ static void netif_config(void)
  *****************************************************************************/
 sl_status_t webpage_start(void)
 {
-  RTOS_ERR err;
-
   osSemaphoreAttr_t  sem_attr;
+  osThreadId_t       thread_id;
+  osThreadAttr_t     thread_attr;
 
   sem_attr.name = "wifi_scan_sem";
   sem_attr.cb_mem = scan_sem_cb;
@@ -849,20 +846,17 @@ sl_status_t webpage_start(void)
   scan_sem = osSemaphoreNew(1, 0, &sem_attr);
   EFM_ASSERT(scan_sem != NULL);
 
-  OSTaskCreate(&webpage_start_task_tcb,
-               "Webpage Start Task",
-               webpage_start_task,
-               DEF_NULL,
-               WEBPAGE_START_TASK_PRIO,
-               &webpage_start_task_stk[0],
-               (WEBPAGE_START_TASK_STK_SIZE / 10u),
-               WEBPAGE_START_TASK_STK_SIZE,
-               0u,
-               0u,
-               DEF_NULL,
-               (OS_OPT_TASK_STK_CLR),
-               &err);
-  /*   Check error code.                                  */
-  APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
+  thread_attr.name = "Webpage Start Task";
+  thread_attr.priority = WEBPAGE_START_TASK_PRIO;
+  thread_attr.stack_mem = webpage_start_stask;
+  thread_attr.stack_size = WEBPAGE_START_TASK_STK_SIZE;
+  thread_attr.cb_mem = webpage_start_task_cb;
+  thread_attr.cb_size = osThreadCbSize;
+  thread_attr.attr_bits = 0u;
+  thread_attr.tz_module = 0u;
+
+  thread_id = osThreadNew(webpage_start_task, NULL, &thread_attr);
+  EFM_ASSERT(thread_id != NULL);
+  
   return SL_STATUS_OK;
 }

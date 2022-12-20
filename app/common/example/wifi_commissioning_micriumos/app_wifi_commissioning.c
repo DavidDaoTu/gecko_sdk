@@ -37,9 +37,9 @@
 #define START_APP_TASK_PRIO              30u
 #define START_APP_TASK_STK_SIZE         600u
 /// Start task stack.
-static CPU_STK start_app_task_stk[START_APP_TASK_STK_SIZE];
+__ALIGNED(8) static uint8_t start_app_stask[(START_APP_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
 /// Start task TCB.
-static OS_TCB  start_app_task_tcb;
+__ALIGNED(4) static uint8_t start_app_task_cb[osThreadCbSize];
 static void    start_app_task(void *p_arg);
 
 void sl_button_on_change(const sl_button_t *handle)
@@ -55,7 +55,6 @@ void sl_button_on_change(const sl_button_t *handle)
 
 static void start_app_task(void *p_arg)
 {
-  RTOS_ERR  err;
   PP_UNUSED_PARAM(p_arg); // Prevent compiler warning.
 
   osSemaphoreAcquire(sl_wfx_init_sem, osWaitForever);
@@ -66,27 +65,25 @@ static void start_app_task(void *p_arg)
   webpage_start();
 
   // Delete the init thread.
-  OSTaskDel(0, &err);
+  osThreadExit();
 }
 /**************************************************************************//**
  * Wi-Fi Commissioning application init.
  *****************************************************************************/
 void app_wifi_commissioning_init(void)
 {
-  RTOS_ERR err;
+  osThreadId_t       thread_id;
+  osThreadAttr_t     thread_attr;
 
-  OSTaskCreate(&start_app_task_tcb,   // Create the Start Task.
-               "Start APP Task",
-               start_app_task,
-               DEF_NULL,
-               START_APP_TASK_PRIO,
-               &start_app_task_stk[0],
-               (START_APP_TASK_STK_SIZE / 10u),
-               START_APP_TASK_STK_SIZE,
-               0u,
-               0u,
-               DEF_NULL,
-               (OS_OPT_TASK_STK_CLR),
-               &err);
-  APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
+  thread_attr.name = "Start APP Task";
+  thread_attr.priority = START_APP_TASK_PRIO;
+  thread_attr.stack_mem = start_app_stask;
+  thread_attr.stack_size = START_APP_TASK_STK_SIZE;
+  thread_attr.cb_mem = start_app_task_cb;
+  thread_attr.cb_size = osThreadCbSize;
+  thread_attr.attr_bits = 0u;
+  thread_attr.tz_module = 0u;
+
+  thread_id = osThreadNew(start_app_task, NULL, &thread_attr);
+  EFM_ASSERT(thread_id != NULL);
 }

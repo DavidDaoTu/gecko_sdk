@@ -36,8 +36,8 @@
 // Event Task Configurations
 #define WFX_EVENTS_TASK_PRIO              21u
 #define WFX_EVENTS_TASK_STK_SIZE        1024u
-#define WFX_EVENTS_NB_MAX                  5u//10u
-#define MSG_Q_MAXSIZE                   2048u
+#define WFX_EVENTS_NB_MAX                 10u
+#define MSG_Q_MAXSIZE                      1u
 
 void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect);
 void sl_wfx_disconnect_callback(sl_wfx_disconnect_ind_t *disconnect);
@@ -54,17 +54,19 @@ void sl_wfx_host_received_frame_callback(sl_wfx_received_ind_t *rx_buffer);
 extern char event_log[];
 extern char softap_ssid[32 + 1];
 
-osMessageQueueId_t  wifi_events;
-static uint8_t      wifi_events_cb[osMessageQueueCbSize];
-//static uint32_t     msgqueue_mq[WFX_EVENTS_NB_MAX];
-scan_result_list_t  scan_list[SL_WFX_MAX_SCAN_RESULTS];
-uint8_t             scan_count_web = 0;
-
+osMessageQueueId_t      wifi_events;
+scan_result_list_t      scan_list[SL_WFX_MAX_SCAN_RESULTS];
+uint8_t                 scan_count_web = 0;
 static uint8_t          scan_count = 0;
 bool                    scan_verbose   = true;
-static CPU_STK          wfx_events_task_stk[WFX_EVENTS_TASK_STK_SIZE];
-static OS_TCB           wfx_events_task_tcb;
 extern osSemaphoreId_t  scan_sem;
+
+__ALIGNED(8) static uint8_t wfx_events_stask[(WFX_EVENTS_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+__ALIGNED(4) static uint8_t wfx_events_task_cb[osThreadCbSize];
+
+typedef struct {
+  uint8_t id;               /* Contains the queue message Id */
+} queue_msg_t;
 
 /**************************************************************************//**
  * Function processing the incoming Wi-Fi messages
@@ -207,27 +209,21 @@ void sl_wfx_scan_result_callback(sl_wfx_scan_result_ind_t *scan_result)
  *****************************************************************************/
 void sl_wfx_scan_complete_callback(sl_wfx_scan_complete_ind_t *scan_complete)
 {
-  void *buffer;
-  sl_status_t status;
+  queue_msg_t scan_complete_msg;
 
   scan_count_web = scan_count;
   scan_count = 0;
 
-  status = sl_wfx_host_allocate_buffer(&buffer,
-                                       SL_WFX_RX_FRAME_BUFFER,
-                                       scan_complete->header.length);
-  if (status == SL_STATUS_OK) {
-    memcpy(buffer, (void *)scan_complete, scan_complete->header.length);
-    osMessageQueuePut(wifi_events, buffer, 0, osWaitForever);
-  }
+  scan_complete_msg.id = scan_complete->header.id;
+  osMessageQueuePut(wifi_events, &scan_complete_msg, 0, osWaitForever);
 }
+
 /**************************************************************************//**
  * Callback when station connects
  *****************************************************************************/
 void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect)
 {
-  void *buffer;
-  sl_status_t status;
+  queue_msg_t connect_msg;
 
   switch (connect->body.status) {
     case WFM_STATUS_SUCCESS:
@@ -235,13 +231,8 @@ void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect)
       printf("Connected\r\n");
       sl_wfx_context->state |= SL_WFX_STA_INTERFACE_CONNECTED;
 
-      status = sl_wfx_host_allocate_buffer(&buffer,
-                                           SL_WFX_RX_FRAME_BUFFER,
-                                           connect->header.length);
-      if (status == SL_STATUS_OK) {
-        memcpy(buffer, (void *)connect, connect->header.length);
-        osMessageQueuePut(wifi_events, buffer, 0, osWaitForever);
-      }
+      connect_msg.id = connect->header.id;
+      osMessageQueuePut(wifi_events, &connect_msg, 0, osWaitForever);
       break;
     }
     case WFM_STATUS_NO_MATCHING_AP:
@@ -287,19 +278,14 @@ void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect)
  *****************************************************************************/
 void sl_wfx_disconnect_callback(sl_wfx_disconnect_ind_t *disconnect)
 {
-  void *buffer;
-  sl_status_t status;
+  queue_msg_t disconnect_msg;
 
   printf("Disconnected %d\r\n", disconnect->body.reason);
   sl_wfx_context->state &= ~SL_WFX_STA_INTERFACE_CONNECTED;
 
-  status = sl_wfx_host_allocate_buffer(&buffer,
-                                       SL_WFX_RX_FRAME_BUFFER,
-                                       disconnect->header.length);
-  if (status == SL_STATUS_OK) {
-    memcpy(buffer, (void *)disconnect, disconnect->header.length);
-    osMessageQueuePut(wifi_events, buffer, 0, osWaitForever);
-  }
+  disconnect_msg.id = disconnect->header.id;
+  osMessageQueuePut(wifi_events, &disconnect_msg, 0, osWaitForever);
+
 }
 
 /**************************************************************************//**
@@ -307,21 +293,15 @@ void sl_wfx_disconnect_callback(sl_wfx_disconnect_ind_t *disconnect)
  *****************************************************************************/
 void sl_wfx_start_ap_callback(sl_wfx_start_ap_ind_t *start_ap)
 {
-  void *buffer;
-  sl_status_t status;
+  queue_msg_t start_ap_msg;
 
   if (start_ap->body.status == 0) {
     printf("AP started\r\n");
     printf("Join the AP with SSID: %s\r\n", softap_ssid);
     sl_wfx_context->state |= SL_WFX_AP_INTERFACE_UP;
 
-    status = sl_wfx_host_allocate_buffer(&buffer,
-                                         SL_WFX_RX_FRAME_BUFFER,
-                                         start_ap->header.length);
-    if (status == SL_STATUS_OK) {
-      memcpy(buffer, (void *)start_ap, start_ap->header.length);
-      osMessageQueuePut(wifi_events, buffer, 0, osWaitForever);
-    }
+    start_ap_msg.id = start_ap->header.id;
+    osMessageQueuePut(wifi_events, &start_ap_msg, 0, osWaitForever);
   } else {
     printf("AP start failed\r\n");
     strcpy(event_log, "AP start failed");
@@ -333,20 +313,14 @@ void sl_wfx_start_ap_callback(sl_wfx_start_ap_ind_t *start_ap)
  *****************************************************************************/
 void sl_wfx_stop_ap_callback(sl_wfx_stop_ap_ind_t *stop_ap)
 {
-  void *buffer;
-  sl_status_t status;
+  queue_msg_t stop_ap_msg;
 
   printf("SoftAP stopped\r\n");
   dhcpserver_clear_stored_mac();
   sl_wfx_context->state &= ~SL_WFX_AP_INTERFACE_UP;
 
-  status = sl_wfx_host_allocate_buffer(&buffer,
-                                       SL_WFX_RX_FRAME_BUFFER,
-                                       stop_ap->length);
-  if (status == SL_STATUS_OK) {
-    memcpy(buffer, (void *)stop_ap, stop_ap->length);
-    osMessageQueuePut(wifi_events, buffer, 0, osWaitForever);
-  }
+  stop_ap_msg.id = stop_ap->id;
+  osMessageQueuePut(wifi_events, &stop_ap_msg, 0, osWaitForever);
 }
 /**************************************************************************//**
  * Callback for client connect to AP
@@ -414,16 +388,15 @@ void sl_wfx_generic_status_callback(sl_wfx_generic_ind_t* frame)
  ******************************************************************************/
 static void wfx_events_task(void *p_arg)
 {
-  sl_wfx_generic_message_t *msg;
   (void)p_arg;
-
-  sl_wfx_host_allocate_buffer((void*)&msg, SL_WFX_RX_FRAME_BUFFER, MSG_Q_MAXSIZE);
+  queue_msg_t wifi_events_msg;
+  osStatus_t status;
 
   while (1) {
-    osMessageQueueGet(wifi_events, msg, NULL, osWaitForever);
+      status= osMessageQueueGet(wifi_events, &wifi_events_msg, NULL, 0U);
 
-    if (msg != NULL) {
-      switch (msg->header.id) {
+    if (status == osOK) {
+      switch(wifi_events_msg.id) {
         case SL_WFX_CONNECT_IND_ID:
         {
           set_sta_link_up();
@@ -476,8 +449,6 @@ static void wfx_events_task(void *p_arg)
           break;
         }
       }
-
-      sl_wfx_host_free_buffer(msg, SL_WFX_RX_FRAME_BUFFER);
     }
   }
 }
@@ -487,42 +458,30 @@ static void wfx_events_task(void *p_arg)
  ******************************************************************************/
 void app_wifi_events_start(void)
 {
-  RTOS_ERR err;
-
 #ifdef SL_CATALOG_POWER_MANAGER_PRESENT
 #ifdef SL_CATALOG_WFX_BUS_SDIO_PRESENT
   sl_status_t status;
   status = sl_wfx_host_switch_to_wirq();
   // Check error code.
-  APP_RTOS_ASSERT_DBG((status == SL_STATUS_OK), 1);
+  EFM_ASSERT(status == SL_STATUS_OK);
 #endif
 #endif
 
-  osMessageQueueAttr_t msq_attr;
+  osThreadId_t       thread_id;
+  osThreadAttr_t     thread_attr;
 
-  msq_attr.name = "wifi events";
-  msq_attr.cb_mem = wifi_events_cb;
-  msq_attr.cb_size = osMessageQueueCbSize;
-  msq_attr.attr_bits = 0;
-  //msq_attr.mq_mem = &msgqueue_mq;
-  msq_attr.mq_mem = NULL;
-  msq_attr.mq_size = WFX_EVENTS_NB_MAX * MSG_Q_MAXSIZE;
-  wifi_events = osMessageQueueNew(WFX_EVENTS_NB_MAX, MSG_Q_MAXSIZE, &msq_attr);
+  wifi_events = osMessageQueueNew(WFX_EVENTS_NB_MAX, sizeof(queue_msg_t), NULL);
   EFM_ASSERT(wifi_events != NULL);
 
-  OSTaskCreate(&wfx_events_task_tcb,
-               "WFX events task",
-               wfx_events_task,
-               DEF_NULL,
-               WFX_EVENTS_TASK_PRIO,
-               &wfx_events_task_stk[0],
-               (WFX_EVENTS_TASK_STK_SIZE / 10u),
-               WFX_EVENTS_TASK_STK_SIZE,
-               0u,
-               0u,
-               DEF_NULL,
-               (OS_OPT_TASK_STK_CLR),
-               &err);
-  // Check error code.
-  APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
+  thread_attr.name = "WFX events task";
+  thread_attr.priority = WFX_EVENTS_TASK_PRIO;
+  thread_attr.stack_mem = wfx_events_stask;
+  thread_attr.stack_size = WFX_EVENTS_TASK_STK_SIZE;
+  thread_attr.cb_mem = wfx_events_task_cb;
+  thread_attr.cb_size = osThreadCbSize;
+  thread_attr.attr_bits = 0u;
+  thread_attr.tz_module = 0u;
+
+  thread_id = osThreadNew(wfx_events_task, NULL, &thread_attr);
+  EFM_ASSERT(thread_id != NULL);
 }

@@ -37,7 +37,9 @@
 #define WFX_EVENTS_TASK_PRIO              21u
 #define WFX_EVENTS_TASK_STK_SIZE        1024u
 #define WFX_EVENTS_NB_MAX                 10u
-#define MSG_Q_MAXSIZE                      1u
+
+// Contains the queue message Id
+typedef uint8_t queue_msg_id_t;
 
 void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect);
 void sl_wfx_disconnect_callback(sl_wfx_disconnect_ind_t *disconnect);
@@ -58,15 +60,11 @@ osMessageQueueId_t      wifi_events;
 scan_result_list_t      scan_list[SL_WFX_MAX_SCAN_RESULTS];
 uint8_t                 scan_count_web = 0;
 static uint8_t          scan_count = 0;
-bool                    scan_verbose   = true;
+bool                    scan_verbose = true;
 extern osSemaphoreId_t  scan_sem;
 
 __ALIGNED(8) static uint8_t wfx_events_stask[(WFX_EVENTS_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
 __ALIGNED(4) static uint8_t wfx_events_task_cb[osThreadCbSize];
-
-typedef struct {
-  uint8_t id;               /* Contains the queue message Id */
-} queue_msg_t;
 
 /**************************************************************************//**
  * Function processing the incoming Wi-Fi messages
@@ -209,12 +207,12 @@ void sl_wfx_scan_result_callback(sl_wfx_scan_result_ind_t *scan_result)
  *****************************************************************************/
 void sl_wfx_scan_complete_callback(sl_wfx_scan_complete_ind_t *scan_complete)
 {
-  queue_msg_t scan_complete_msg;
+  queue_msg_id_t scan_complete_msg;
 
   scan_count_web = scan_count;
   scan_count = 0;
 
-  scan_complete_msg.id = scan_complete->header.id;
+  scan_complete_msg = scan_complete->header.id;
   osMessageQueuePut(wifi_events, &scan_complete_msg, 0, osWaitForever);
 }
 
@@ -223,7 +221,7 @@ void sl_wfx_scan_complete_callback(sl_wfx_scan_complete_ind_t *scan_complete)
  *****************************************************************************/
 void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect)
 {
-  queue_msg_t connect_msg;
+  queue_msg_id_t connect_msg;
 
   switch (connect->body.status) {
     case WFM_STATUS_SUCCESS:
@@ -231,7 +229,7 @@ void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect)
       printf("Connected\r\n");
       sl_wfx_context->state |= SL_WFX_STA_INTERFACE_CONNECTED;
 
-      connect_msg.id = connect->header.id;
+      connect_msg = connect->header.id;
       osMessageQueuePut(wifi_events, &connect_msg, 0, osWaitForever);
       break;
     }
@@ -278,12 +276,12 @@ void sl_wfx_connect_callback(sl_wfx_connect_ind_t *connect)
  *****************************************************************************/
 void sl_wfx_disconnect_callback(sl_wfx_disconnect_ind_t *disconnect)
 {
-  queue_msg_t disconnect_msg;
+  queue_msg_id_t disconnect_msg;
 
   printf("Disconnected %d\r\n", disconnect->body.reason);
   sl_wfx_context->state &= ~SL_WFX_STA_INTERFACE_CONNECTED;
 
-  disconnect_msg.id = disconnect->header.id;
+  disconnect_msg = disconnect->header.id;
   osMessageQueuePut(wifi_events, &disconnect_msg, 0, osWaitForever);
 
 }
@@ -293,14 +291,14 @@ void sl_wfx_disconnect_callback(sl_wfx_disconnect_ind_t *disconnect)
  *****************************************************************************/
 void sl_wfx_start_ap_callback(sl_wfx_start_ap_ind_t *start_ap)
 {
-  queue_msg_t start_ap_msg;
+  queue_msg_id_t start_ap_msg;
 
   if (start_ap->body.status == 0) {
     printf("AP started\r\n");
     printf("Join the AP with SSID: %s\r\n", softap_ssid);
     sl_wfx_context->state |= SL_WFX_AP_INTERFACE_UP;
 
-    start_ap_msg.id = start_ap->header.id;
+    start_ap_msg = start_ap->header.id;
     osMessageQueuePut(wifi_events, &start_ap_msg, 0, osWaitForever);
   } else {
     printf("AP start failed\r\n");
@@ -313,13 +311,13 @@ void sl_wfx_start_ap_callback(sl_wfx_start_ap_ind_t *start_ap)
  *****************************************************************************/
 void sl_wfx_stop_ap_callback(sl_wfx_stop_ap_ind_t *stop_ap)
 {
-  queue_msg_t stop_ap_msg;
+  queue_msg_id_t stop_ap_msg;
 
   printf("SoftAP stopped\r\n");
   dhcpserver_clear_stored_mac();
   sl_wfx_context->state &= ~SL_WFX_AP_INTERFACE_UP;
 
-  stop_ap_msg.id = stop_ap->id;
+  stop_ap_msg = stop_ap->id;
   osMessageQueuePut(wifi_events, &stop_ap_msg, 0, osWaitForever);
 }
 /**************************************************************************//**
@@ -389,14 +387,14 @@ void sl_wfx_generic_status_callback(sl_wfx_generic_ind_t* frame)
 static void wfx_events_task(void *p_arg)
 {
   (void)p_arg;
-  queue_msg_t wifi_events_msg;
+  queue_msg_id_t wifi_events_msg;
   osStatus_t status;
 
   while (1) {
       status= osMessageQueueGet(wifi_events, &wifi_events_msg, NULL, 0U);
 
     if (status == osOK) {
-      switch(wifi_events_msg.id) {
+      switch(wifi_events_msg) {
         case SL_WFX_CONNECT_IND_ID:
         {
           set_sta_link_up();
@@ -470,7 +468,7 @@ void app_wifi_events_start(void)
   osThreadId_t       thread_id;
   osThreadAttr_t     thread_attr;
 
-  wifi_events = osMessageQueueNew(WFX_EVENTS_NB_MAX, sizeof(queue_msg_t), NULL);
+  wifi_events = osMessageQueueNew(WFX_EVENTS_NB_MAX, sizeof(queue_msg_id_t), NULL);
   EFM_ASSERT(wifi_events != NULL);
 
   thread_attr.name = "WFX events task";

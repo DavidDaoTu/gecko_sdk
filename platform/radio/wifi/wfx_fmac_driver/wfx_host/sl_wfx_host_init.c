@@ -15,10 +15,6 @@
  *
  ******************************************************************************/
 
-#include "os.h"
-#include "io.h"
-#include "bsp_os.h"
-#include "common.h"
 #include "em_common.h"
 #include "em_gpio.h"
 #include "sl_wfx_task.h"
@@ -161,32 +157,20 @@ static void wifi_start(void)
       printf("Failed to init WF200: Unknown error %lu\r\n", status);
   }
   // Check error code.
-  APP_RTOS_ASSERT_DBG((status == SL_STATUS_OK), 1);
+  EFM_ASSERT(status == SL_STATUS_OK);
 
 #ifdef SL_CATALOG_POWER_MANAGER_PRESENT
 #ifdef SL_CATALOG_WFX_BUS_SDIO_PRESENT
   status = sl_wfx_host_switch_to_wirq();
   // Check error code.
-  APP_RTOS_ASSERT_DBG((status == SL_STATUS_OK), 1);
+  EFM_ASSERT(status == SL_STATUS_OK);
 #endif
 #endif
 }
 
 static void start_task(void *p_arg)
 {
-  RTOS_ERR  err;
-  PP_UNUSED_PARAM(p_arg); // Prevent compiler warning.
-
-  // Initialize the IO module.
-  IO_Init(&err);
-  APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
-
-  // Call common module initialization.
-  Common_Init(&err);
-  APP_RTOS_ASSERT_CRITICAL(err.Code == RTOS_ERR_NONE,; );
-
-  // Initialize the BSP.
-  BSP_OS_Init();
+  (void)p_arg;
 
   gpio_setup();
 
@@ -205,7 +189,6 @@ static void start_task(void *p_arg)
   wifi_start();
 
   // Delete the init thread.
-  //OSTaskDel(0, &err);
   osThreadExit();
 }
 

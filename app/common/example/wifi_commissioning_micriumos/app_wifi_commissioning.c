@@ -18,10 +18,6 @@
 #define CURRENT_MODULE_NAME    "APP_COMMON_EXAMPLE_WIFI_COMMISSIONING"
 
 #include <stdio.h>
-#include "os.h"
-#include "io.h"
-#include "bsp_os.h"
-#include "common.h"
 #include "em_common.h"
 #include "sl_simple_led_instances.h"
 #include "sl_simple_button_instances.h"
@@ -37,7 +33,7 @@
 #define START_APP_TASK_PRIO              30u
 #define START_APP_TASK_STK_SIZE         600u
 /// Start task stack.
-__ALIGNED(8) static uint8_t start_app_stask[(START_APP_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+__ALIGNED(8) static uint8_t start_app_stack[(START_APP_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
 /// Start task TCB.
 __ALIGNED(4) static uint8_t start_app_task_cb[osThreadCbSize];
 static void    start_app_task(void *p_arg);
@@ -55,7 +51,7 @@ void sl_button_on_change(const sl_button_t *handle)
 
 static void start_app_task(void *p_arg)
 {
-  PP_UNUSED_PARAM(p_arg); // Prevent compiler warning.
+  (void)p_arg;
 
   osSemaphoreAcquire(sl_wfx_init_sem, osWaitForever);
   // Clear the console and buffer
@@ -77,7 +73,7 @@ void app_wifi_commissioning_init(void)
 
   thread_attr.name = "Start APP Task";
   thread_attr.priority = START_APP_TASK_PRIO;
-  thread_attr.stack_mem = start_app_stask;
+  thread_attr.stack_mem = start_app_stack;
   thread_attr.stack_size = START_APP_TASK_STK_SIZE;
   thread_attr.cb_mem = start_app_task_cb;
   thread_attr.cb_size = osThreadCbSize;

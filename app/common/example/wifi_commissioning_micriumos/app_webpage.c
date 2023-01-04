@@ -19,14 +19,6 @@
  * limitations under the License.
  *****************************************************************************/
 
-#include <cpu/include/cpu.h>
-#include <kernel/include/os.h>
-#include <kernel/include/os_trace.h>
-#include <common/include/common.h>
-#include <common/include/lib_def.h>
-#include <common/include/rtos_utils.h>
-#include <common/include/toolchains.h>
-
 #include "sl_wfx.h"
 #include "string.h"
 
@@ -126,7 +118,7 @@ uint8_t ap_gw_addr2 = AP_GW_ADDR2_DEFAULT;
 uint8_t ap_gw_addr3 = AP_GW_ADDR3_DEFAULT;
 
 // Webpage start task stack
-__ALIGNED(8) static uint8_t webpage_start_stask[(WEBPAGE_START_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+__ALIGNED(8) static uint8_t webpage_start_stack[(WEBPAGE_START_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
 // Webpage start task TCB
 __ALIGNED(4) static uint8_t webpage_start_task_cb[osThreadCbSize];
 
@@ -693,8 +685,6 @@ static void iperf_results(void *arg, enum lwiperf_report_type report_type,
  ******************************************************************************/
 static void webpage_start_task(void *p_arg)
 {
-  RTOS_ERR err;
-
   (void)p_arg;
 
   // Create tcp_ip stack thread
@@ -720,7 +710,7 @@ static void webpage_start_task(void *p_arg)
 
   for (;; ) {
     // Delete the Init Thread
-    OSTaskDel(NULL, &err);
+    osThreadExit();
   }
 }
 /**************************************************************************//**
@@ -848,7 +838,7 @@ sl_status_t webpage_start(void)
 
   thread_attr.name = "Webpage Start Task";
   thread_attr.priority = WEBPAGE_START_TASK_PRIO;
-  thread_attr.stack_mem = webpage_start_stask;
+  thread_attr.stack_mem = webpage_start_stack;
   thread_attr.stack_size = WEBPAGE_START_TASK_STK_SIZE;
   thread_attr.cb_mem = webpage_start_task_cb;
   thread_attr.cb_size = osThreadCbSize;

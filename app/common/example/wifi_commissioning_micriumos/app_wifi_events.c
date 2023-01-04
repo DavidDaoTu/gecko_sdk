@@ -23,9 +23,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <kernel/include/os.h>
-#include <common/include/rtos_utils.h>
-#include <common/include/rtos_err.h>
 #include "sl_wfx_host.h"
 #include "dhcp_server.h"
 #include "app_webpage.h"
@@ -63,7 +60,7 @@ static uint8_t          scan_count = 0;
 bool                    scan_verbose = true;
 extern osSemaphoreId_t  scan_sem;
 
-__ALIGNED(8) static uint8_t wfx_events_stask[(WFX_EVENTS_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+__ALIGNED(8) static uint8_t wfx_events_stack[(WFX_EVENTS_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
 __ALIGNED(4) static uint8_t wfx_events_task_cb[osThreadCbSize];
 
 /**************************************************************************//**
@@ -391,7 +388,7 @@ static void wfx_events_task(void *p_arg)
   osStatus_t status;
 
   while (1) {
-      status= osMessageQueueGet(wifi_events, &wifi_events_msg, NULL, 0U);
+    status= osMessageQueueGet(wifi_events, &wifi_events_msg, NULL, 1000U);
 
     if (status == osOK) {
       switch(wifi_events_msg) {
@@ -473,7 +470,7 @@ void app_wifi_events_start(void)
 
   thread_attr.name = "WFX events task";
   thread_attr.priority = WFX_EVENTS_TASK_PRIO;
-  thread_attr.stack_mem = wfx_events_stask;
+  thread_attr.stack_mem = wfx_events_stack;
   thread_attr.stack_size = WFX_EVENTS_TASK_STK_SIZE;
   thread_attr.cb_mem = wfx_events_task_cb;
   thread_attr.cb_size = osThreadCbSize;

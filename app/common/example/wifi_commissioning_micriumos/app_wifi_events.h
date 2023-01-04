@@ -17,10 +17,6 @@
 #define APP_WIFI_EVENTS_H
 
 #include "sl_wfx_constants.h"
-#include <kernel/include/os.h>
-#include <common/include/rtos_utils.h>
-#include <common/include/rtos_err.h>
-#include <common/include/rtos_err.h>
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
 

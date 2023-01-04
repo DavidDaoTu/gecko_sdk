@@ -30,13 +30,10 @@
 #include "app_webpage.h"
 #include "app_wifi_events.h"
 
-#include <kernel/include/os.h>
-#include <common/include/rtos_utils.h>
-#include <common/include/rtos_err.h>
-#include <common/source/kal/kal_priv.h>
-#include <common/include/rtos_err.h>
 #include "sl_wfx_task.h"
 #include "sl_wfx_host.h"
+#include "cmsis_os2.h"
+#include "sl_cmsis_os2_common.h"
 
 const char *station_netif = "st";
 const char *softap_netif = "ap";

@@ -46,7 +46,7 @@ static void sl_wfx_securelink_task(void *p_arg)
   (void)p_arg;
 
   for (;; ) {
-    osSemaphoreAcquire(sl_wfx_securelink_sem, portMAX_Delay);
+    osSemaphoreAcquire(sl_wfx_securelink_sem, osWaitForever);
     result = sl_wfx_secure_link_renegotiate_session_key();
     if (result != SL_STATUS_OK) {
       printf ("WFX session key negotiation error %lu\n",result);

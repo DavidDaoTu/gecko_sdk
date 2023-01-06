@@ -388,7 +388,7 @@ static void wfx_events_task(void *p_arg)
   osStatus_t status;
 
   while (1) {
-    status= osMessageQueueGet(wifi_events, &wifi_events_msg, NULL, 1000U);
+    status = osMessageQueueGet(wifi_events, &wifi_events_msg, NULL, osWaitForever);
 
     if (status == osOK) {
       switch(wifi_events_msg) {

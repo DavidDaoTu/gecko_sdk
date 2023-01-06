@@ -42,7 +42,7 @@
 static volatile uint8_t dhcp_state = DHCP_OFF;
 
 #define DHCP_TASK_PRIO              22u
-#define DHCP_TASK_STK_SIZE         512u
+#define DHCP_TASK_STK_SIZE         800u//512u
 
 // /// DHCP client task stack
 // static CPU_STK dhcp_task_stk[DHCP_TASK_STK_SIZE];
@@ -154,6 +154,6 @@ void dhcpclient_start(void)
   thread_attr.attr_bits = 0u;
   thread_attr.tz_module = 0u;
 
-  thread_id = osThreadNew(dhcp_client_task, NULL, &thread_attr);
+  thread_id = osThreadNew(dhcp_client_task, &sta_netif, &thread_attr);
   EFM_ASSERT(thread_id != NULL);
 }

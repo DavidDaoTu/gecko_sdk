@@ -50,8 +50,8 @@
 ******************************************************/
 
 /* Semaphore to signal wfx driver available */
-extern osMutexId_t      wfx_securelink_rx_mutex;
-extern osSemaphoreId_t  wfx_securelink_sem;
+extern osMutexId_t      sl_wfx_securelink_rx_mutex;
+extern osSemaphoreId_t  sl_wfx_securelink_sem;
 
 /******************************************************
 *                   Enumerations
@@ -152,8 +152,8 @@ sl_status_t sl_wfx_host_verify_pub_key(sl_wfx_securelink_exchange_pub_keys_ind_t
   sl_status_t status = SL_STATUS_OK;
   uint8_t shared_key_digest[92];
 
-  err = osMutexAcquire(wfx_securelink_rx_mutex, portMAX_Delay);
-  if (err != osOK)
+  err = osMutexAcquire(sl_wfx_securelink_rx_mutex, osWaitForever);
+  if (err != osOK) {
     return SL_STATUS_WIFI_SECURE_LINK_EXCHANGE_FAILED;
   }
 
@@ -212,9 +212,9 @@ sl_status_t sl_wfx_host_verify_pub_key(sl_wfx_securelink_exchange_pub_keys_ind_t
   sl_wfx_context->secure_link_nonce.tx_packet_count = 0;
 
   error_handler:
-  err = osMutexRelease(wfx_securelink_rx_mutex);
-  if (err != osOK)
-    printf("ERROR: wfx_securelink_rx_mutex. unable to post.\n");
+  err = osMutexRelease(sl_wfx_securelink_rx_mutex);
+  if (err != osOK) {
+    printf("ERROR: sl_wfx_securelink_rx_mutex. unable to post.\n");
   }
   return status;
 }
@@ -242,8 +242,8 @@ sl_status_t sl_wfx_host_decode_secure_link_data(uint8_t* buffer,
   int crypto_status;
   sl_wfx_nonce_t nonce = { 0, 0, 0 };
 
-  err = osMutexAcquire(wfx_securelink_rx_mutex, portMAX_Delay);
-  if (err != osOK)
+  err = osMutexAcquire(sl_wfx_securelink_rx_mutex, osWaitForever);
+  if (err != osOK) {
     return SL_STATUS_FAIL;
   }
 
@@ -268,9 +268,9 @@ sl_status_t sl_wfx_host_decode_secure_link_data(uint8_t* buffer,
 
   error_handler:
   mbedtls_ccm_free(&ccm_context);
-  err = osMutexRelease(wfx_securelink_rx_mutex);
-  if (err != osOK)
-    printf("ERROR: wfx_securelink_mutex. unable to post.\n");
+  err = osMutexRelease(sl_wfx_securelink_rx_mutex);
+  if (err != osOK) {
+    printf("ERROR: sl_wfx_securelink_rx_mutex. unable to post.\n");
   }
   return status;
 }
@@ -299,7 +299,7 @@ sl_status_t sl_wfx_host_encode_secure_link_data(sl_wfx_generic_message_t* buffer
 sl_status_t sl_wfx_host_schedule_secure_link_renegotiation(void)
 {
   // call sl_wfx_secure_link_renegotiate_session_key() as soon as it makes sense for the host to do so
-  osSemaphoreRelease(wfx_securelink_sem);
+  osSemaphoreRelease(sl_wfx_securelink_sem);
   return SL_STATUS_OK;
 }
 

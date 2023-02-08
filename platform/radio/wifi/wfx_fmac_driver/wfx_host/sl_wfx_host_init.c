@@ -15,6 +15,7 @@
  *
  ******************************************************************************/
 /** For SDIO fixes */
+#include "os.h"
 #include "io.h"
 #include "bsp_os.h"
 #include "common.h"
@@ -177,6 +178,8 @@ static void start_task(void *p_arg)
   RTOS_ERR  err;
   (void)p_arg;
   /** For SDIO fixes */
+  PP_UNUSED_PARAM(p_arg); // Prevent compiler warning.
+
   // Initialize the IO module.
   IO_Init(&err);
   APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);

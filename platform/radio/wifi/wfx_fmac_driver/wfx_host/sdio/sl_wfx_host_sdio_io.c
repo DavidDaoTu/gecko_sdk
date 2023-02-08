@@ -73,7 +73,8 @@ sl_status_t sl_wfx_host_init_bus(void)
 
   sdio_enabled = true;
   // Check to see if the bus was already added
-  if (SD_BusHandleGetFromName(SL_WIFI_CFG_SD_CONTROLLER_NAME) == SD_BusHandleNull) {
+//  if (SD_BusHandleGetFromName(SL_WIFI_CFG_SD_CONTROLLER_NAME) == SD_BusHandleNull) {
+  if (SD_BusHandleNull  == SD_BusHandleGetFromName(SL_WIFI_CFG_SD_CONTROLLER_NAME)) {
     (void)SD_BusAdd(SL_WIFI_CFG_SD_CONTROLLER_NAME, &err);
     if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
       return SL_STATUS_FAIL;
@@ -263,12 +264,12 @@ sl_status_t sl_wfx_host_sdio_enable_high_speed_mode(void)
 
 static void sdio_irq_callback(void* arg)
 {
-  RTOS_ERR err;
+  //RTOS_ERR err;
 
   (void)arg;
 
-  OSSemPost(&wfx_wakeup_sem, OS_OPT_POST_ALL, &err);
-  OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_RX, OS_OPT_POST_FLAG_SET, &err);
+  osSemaphoreRelease(sl_wfx_wakeup_sem);
+  osEventFlagsSet(sl_wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
 }
 
 /****************************************************************************************************//**

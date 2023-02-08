@@ -8,6 +8,8 @@ provides:
   - name: "wfx_fmac_driver"
 requires:
   - name: "wfx_bus_interface"
+  - name: "io_core"
+  - name: "common_lib"
   - name: "cmsis_rtos2"
   - name: "mem_pool"
   - name: "emlib_gpio"
@@ -30,8 +32,6 @@ requires:
   - name: "wfx_bus_spi"
     condition: [brd4164a]
   - name: "wfx_bus_sdio"
-    condition: [brd4321a]
-  - name: "wfx_secure_link"
     condition: [brd4321a]
 recommends:
   - id: "wfx_bus_spi"

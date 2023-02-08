@@ -14,6 +14,10 @@
  * sections of the MSLA applicable to Source Code.
  *
  ******************************************************************************/
+/** For SDIO fixes */
+#include "io.h"
+#include "bsp_os.h"
+#include "common.h"
 
 #include "em_common.h"
 #include "em_gpio.h"
@@ -170,8 +174,19 @@ static void wifi_start(void)
 
 static void start_task(void *p_arg)
 {
+  RTOS_ERR  err;
   (void)p_arg;
+  /** For SDIO fixes */
+  // Initialize the IO module.
+  IO_Init(&err);
+  APP_RTOS_ASSERT_DBG((RTOS_ERR_CODE_GET(err) == RTOS_ERR_NONE), 1);
 
+  // Call common module initialization.
+  Common_Init(&err);
+  APP_RTOS_ASSERT_CRITICAL(err.Code == RTOS_ERR_NONE,; );
+
+  // Initialize the BSP.
+  BSP_OS_Init();
   gpio_setup();
 
   //start wfx bus communication task.

@@ -53,7 +53,7 @@
 #error "Please use the configUSER_NUM_THREAD_LOCAL_STORAGE_POINTERS to configure the local storage pointers"
 #endif
 #elif defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
-#include "os.h"
+#include "kernel/include/os.h"
 #endif
 
 #include "sl_status.h"

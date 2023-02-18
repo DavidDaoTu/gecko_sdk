@@ -46,7 +46,7 @@
 #if defined(SL_CATALOG_FREERTOS_KERNEL_PRESENT)
 #include "FreeRTOS.h"
 #elif defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
-#include "os.h"
+#include "kernel/include/os.h"
 #if (CMSIS_RTOS2_TIMER_TASK_EN == DEF_ENABLED)
 // needed for osTimer_t struct
 #include "cmsis_os2.h"

@@ -126,7 +126,8 @@ static err_t low_level_output(struct netif *netif, struct pbuf *p)
   sl_wfx_tx_queue_context.tail_ptr = queue_item;
 
   /* Notify that a TX frame is ready */
-  OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_TX, OS_OPT_POST_FLAG_SET, &err);
+  // OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_TX, OS_OPT_POST_FLAG_SET, &err);
+  osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_TX);
 
   /* Release TX queue mutex */
   OSMutexPost(&sl_wfx_tx_queue_mutex, OS_OPT_POST_NONE, &err);

@@ -27,6 +27,9 @@
 #include "gpiointerrupt.h"
 #include "sl_wfx_host_init.h"
 
+#include "cmsis_os2.h"
+#include "sl_cmsis_os2_common.h"
+
 #ifdef SL_CATALOG_POWER_MANAGER_PRESENT
 #include "sl_power_manager.h"
 #endif
@@ -54,12 +57,15 @@ static void    start_task(void *p_arg);
 
 static void wfx_interrupt(uint8_t intNo)
 {
-  RTOS_ERR err;
+  // RTOS_ERR err;
 
   (void)intNo;
-  if (wfx_wakeup_sem.Type == OS_OBJ_TYPE_SEM ) {
-    OSSemPost(&wfx_wakeup_sem, OS_OPT_POST_ALL, &err);
-  }
+  // if (wfx_wakeup_sem.Type == OS_OBJ_TYPE_SEM ) {
+  //   OSSemPost(&wfx_wakeup_sem, OS_OPT_POST_ALL, &err);
+  // }
+    if (wfx_wakeup_sem != NULL) {
+        osSemaphoreRelease(wfx_wakeup_sem);
+    }
 #ifdef SL_CATALOG_WFX_BUS_SPI_PRESENT
   OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_RX, OS_OPT_POST_FLAG_SET, &err);
 #endif

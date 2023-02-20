@@ -267,8 +267,10 @@ static void sdio_irq_callback(void* arg)
 
   (void)arg;
 
-  OSSemPost(&wfx_wakeup_sem, OS_OPT_POST_ALL, &err);
-  OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_RX, OS_OPT_POST_FLAG_SET, &err);
+  // OSSemPost(&wfx_wakeup_sem, OS_OPT_POST_ALL, &err);
+  // OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_RX, OS_OPT_POST_FLAG_SET, &err);
+  osSemaphoreRelease(wfx_wakeup_sem);
+  osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
 }
 
 /****************************************************************************************************//**

@@ -26,6 +26,11 @@
 #include "sl_wfx_task.h"
 #include "sl_wfx_host.h"
 
+#ifdef SL_CATALOG_KERNEL_PRESENT
+#include "cmsis_os2.h"
+#include "sl_cmsis_os2_common.h"
+#endif
+
 /* Bus Task Configurations*/
 #define SL_WFX_BUS_TASK_PRIO              15u
 #define SL_WFX_BUS_TASK_STK_SIZE         512u
@@ -36,7 +41,10 @@ static CPU_STK sl_wfx_bus_task_stk[SL_WFX_BUS_TASK_STK_SIZE];
 /* wfx bus task TCB*/
 static OS_TCB sl_wfx_bus_task_tcb;
 
-OS_FLAG_GRP           bus_events;
+// OS_FLAG_GRP           bus_events;
+osEventFlagsId_t      wfx_bus_events;
+static uint8_t  wfx_bus_events_cb[osEventFlagsCbSize];
+
 sl_wfx_frame_q_item   bus_tx_frame;
 OS_SEM                bus_tx_complete_sem;
 OS_MUTEX              sl_wfx_tx_queue_mutex;
@@ -53,7 +61,7 @@ static void sl_wfx_task_entry(void *p_arg)
 {
   RTOS_ERR err;
   uint16_t control_register = 0;
-  OS_FLAGS  flags = 0;
+  uint32_t   flags = 0;
 
   (void)p_arg;
 
@@ -71,9 +79,13 @@ static void sl_wfx_task_entry(void *p_arg)
     }
 #endif
     /*Wait for an event*/
-    flags = OSFlagPend(&bus_events, 0xF, SL_WFX_EVENT_TIMEOUT_MS,
-                       OS_OPT_PEND_FLAG_SET_ANY | OS_OPT_PEND_BLOCKING | OS_OPT_PEND_FLAG_CONSUME,
-                       0, &err);
+    // flags = OSFlagPend(&bus_events, 0xF, SL_WFX_EVENT_TIMEOUT_MS,
+    //                    OS_OPT_PEND_FLAG_SET_ANY | OS_OPT_PEND_BLOCKING | OS_OPT_PEND_FLAG_CONSUME,
+    //                    0, &err);
+        flags = osEventFlagsWait(wfx_bus_events,
+                             SL_WFX_BUS_EVENT_FLAG_RX | SL_WFX_BUS_EVENT_FLAG_TX,
+                             osFlagsWaitAny,
+                             osWaitForever);
     if (flags & SL_WFX_BUS_EVENT_FLAG_TX) {
       /* Process TX packets */
       sl_wfx_tx_process();
@@ -100,7 +112,8 @@ static sl_status_t sl_wfx_rx_process(uint16_t control_register)
   result = sl_wfx_receive_frame(&control_register);
   if ((control_register & SL_WFX_CONT_NEXT_LEN_MASK) != 0) {
     /* if a packet is still available in the WF200, set an RX event */
-    OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_RX, OS_OPT_POST_FLAG_SET, &err);
+    // OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_RX, OS_OPT_POST_FLAG_SET, &err);
+    osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_RX);
   }
 
   return result;
@@ -129,7 +142,8 @@ static sl_status_t sl_wfx_tx_process(void)
 
   if (result != SL_STATUS_OK) {
     /* If the packet is not successfully sent, set the associated event and return */
-    OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_TX, OS_OPT_POST_FLAG_SET, &err);
+    // OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_TX, OS_OPT_POST_FLAG_SET, &err);
+    osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_TX);
     OSMutexPost(&sl_wfx_tx_queue_mutex, OS_OPT_POST_NONE, &err);
     return SL_STATUS_FULL;
   }
@@ -147,7 +161,8 @@ static sl_status_t sl_wfx_tx_process(void)
 
   /* If a packet is available, set the associated event */
   if (sl_wfx_tx_queue_context.head_ptr != NULL) {
-    OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_TX, OS_OPT_POST_FLAG_SET, &err);
+    // OSFlagPost(&bus_events, SL_WFX_BUS_EVENT_FLAG_TX, OS_OPT_POST_FLAG_SET, &err);
+    osEventFlagsSet(wfx_bus_events, SL_WFX_BUS_EVENT_FLAG_TX);
   }
 
   /* Release TX queue mutex */
@@ -161,7 +176,17 @@ static sl_status_t sl_wfx_tx_process(void)
 void sl_wfx_task_start()
 {
   RTOS_ERR err;
-  OSFlagCreate(&bus_events, "bus events", 0, &err);
+  // OSFlagCreate(&bus_events, "bus events", 0, &err);
+  osEventFlagsAttr_t event_attr;
+  
+  event_attr.name = "WFX bus events";
+  event_attr.cb_mem = wfx_bus_events_cb;
+  event_attr.cb_size = osEventFlagsCbSize;
+  event_attr.attr_bits = 0;
+
+  wfx_bus_events =  osEventFlagsNew(&event_attr);
+  EFM_ASSERT(wfx_bus_events != NULL);
+
   OSMutexCreate(&sl_wfx_tx_queue_mutex, "tx queue mutex", &err);
   OSSemCreate(&bus_tx_complete_sem, "bus tx comp", 0, &err);
 

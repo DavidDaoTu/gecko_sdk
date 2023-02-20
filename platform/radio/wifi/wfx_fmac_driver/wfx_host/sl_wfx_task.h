@@ -38,7 +38,8 @@ typedef struct {
 
 extern sl_wfx_frame_q_item   bus_tx_frame;
 extern OS_SEM                bus_tx_complete_sem;
-extern OS_FLAG_GRP           bus_events;
+// extern OS_FLAG_GRP           bus_events;
+extern osEventFlagsId_t      wfx_bus_events;
 extern OS_MUTEX              sl_wfx_tx_queue_mutex;
 extern sl_wfx_packet_queue_t sl_wfx_tx_queue_context;
 #ifdef __cplusplus

@@ -35,8 +35,16 @@
 #include "sl_wfx_task.h"
 #include "sl_wfx_host.h"
 
+#ifdef SL_CATALOG_KERNEL_PRESENT
+#include "cmsis_os2.h"
+#include "sl_cmsis_os2_common.h"
+
+osSemaphoreId_t wfx_wakeup_sem;
+static uint8_t wfx_wakeup_sem_cb[osSemaphoreCbSize];
+#endif
+
 OS_SEM wfx_confirmation;
-OS_SEM wfx_wakeup_sem;
+// OS_SEM wfx_wakeup_sem;
 
 static OS_MUTEX wfx_mutex;
 
@@ -93,6 +101,8 @@ sl_status_t sl_wfx_host_setup_memory_pools(void)
  *****************************************************************************/
 sl_status_t sl_wfx_host_init(void)
 {
+  osSemaphoreAttr_t wfx_wakeup_sem_attr;
+
   sl_status_t status = SL_STATUS_OK;
   RTOS_ERR err;
   bool error = false;
@@ -104,10 +114,15 @@ sl_status_t sl_wfx_host_init(void)
   if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
     error = true;
   }
-  OSSemCreate(&wfx_wakeup_sem, "wfx wakeup", 0, &err);
-  if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
-    error = true;
-  }
+  // OSSemCreate(&wfx_wakeup_sem, "wfx wakeup", 0, &err);
+  // if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
+  //   error = true;
+  // }
+  wfx_wakeup_sem_attr.name = "WFX wakeup";
+  wfx_wakeup_sem_attr.cb_mem = wfx_wakeup_sem_cb;
+  wfx_wakeup_sem_attr.cb_size = osSemaphoreCbSize;
+  wfx_wakeup_sem = osSemaphoreNew(1, 0, &wfx_wakeup_sem_attr);
+
   OSMutexCreate(&wfx_mutex, "wfx host mutex", &err);
   if (RTOS_ERR_CODE_GET(err) != RTOS_ERR_NONE) {
     error = true;
@@ -271,9 +286,18 @@ sl_status_t sl_wfx_host_reset_chip(void)
 
 sl_status_t sl_wfx_host_wait_for_wake_up(void)
 {
-  RTOS_ERR err;
-  OSSemSet(&wfx_wakeup_sem, 0, &err);
-  OSSemPend(&wfx_wakeup_sem, 3, OS_OPT_PEND_BLOCKING, 0, &err);
+  // notice
+  // RTOS_ERR err;
+  // OSSemSet(&wfx_wakeup_sem, 0, &err);
+  // OSSemPend(&wfx_wakeup_sem, 3, OS_OPT_PEND_BLOCKING, 0, &err);
+    osStatus_t status;
+
+  status = osSemaphoreAcquire(wfx_wakeup_sem, 3);
+  if (status != osOK)
+  {
+    return SL_STATUS_FAIL;
+  }
+
   return SL_STATUS_OK;
 }
 

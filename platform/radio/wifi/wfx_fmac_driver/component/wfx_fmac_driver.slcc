@@ -8,7 +8,7 @@ provides:
   - name: "wfx_fmac_driver"
 requires:
   - name: "wfx_bus_interface"
-  - name: "micriumos"
+  - name: "cmsis_rtos2"
   - name: "io_core"
   - name: "common_lib"
   - name: "micriumos_bsp"
@@ -77,6 +77,8 @@ source:
   - path: "wfx_host/sl_wfx_host.c"
   - path: "wfx_host/sl_wfx_task.c"
   - path: "wfx_host/sl_wfx_host_init.c"
+    condition:
+      - cmsis_rtos2
 config_file:
   - path: "config/sl_wfx_configuration.h"
     file_id: "sl_wfx_configuration"

@@ -47,8 +47,12 @@ sl_wfx_context_t wifi;
 extern uint8_t wirq_irq_nb;
 #endif
 
-OS_SEM wfx_init_sem;
+// OS_SEM wfx_init_sem;
+osSemaphoreId_t wfx_init_sem;
+static uint8_t  wfx_init_sem_cb[osSemaphoreCbSize];
 
+// __ALIGNED(8) static uint8_t start_task_stack[(START_TASK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
+// __ALIGNED(4) static uint8_t start_task_cb[osThreadCbSize];
 /// Start task stack.
 static CPU_STK start_task_stk[START_TASK_STK_SIZE];
 /// Start task TCB.
@@ -135,7 +139,8 @@ static void wifi_start(void)
 
   // Initialize the WF200
   status = sl_wfx_init(&wifi);
-  OSSemPost(&wfx_init_sem, OS_OPT_POST_ALL, &err);
+  // OSSemPost(&wfx_init_sem, OS_OPT_POST_ALL, &err);
+  osSemaphoreRelease(wfx_init_sem);
   printf("\033\143");
   printf("\033[3J");
   printf("FMAC Driver version    %s\r\n", FMAC_DRIVER_VERSION_STRING);
@@ -217,7 +222,32 @@ static void start_task(void *p_arg)
 void app_internal_wifi_init(void)
 {
   RTOS_ERR err;
-  OSSemCreate(&wfx_init_sem, "wfx init", 0, &err);
+  // OSSemCreate(&wfx_init_sem, "wfx init", 0, &err);
+  osSemaphoreAttr_t  sem_attr;
+  osThreadId_t       thread_id;
+  osThreadAttr_t     thread_attr;
+
+  sem_attr.name = "WFX init";
+  sem_attr.cb_mem = wfx_init_sem_cb;
+  sem_attr.cb_size = osSemaphoreCbSize;
+  sem_attr.attr_bits = 0;
+
+  wfx_init_sem = osSemaphoreNew(1, 0, &sem_attr);
+  EFM_ASSERT(wfx_init_sem != NULL);
+
+  // thread_attr.name = "Start Task";
+  // thread_attr.priority = START_TASK_PRIO;
+  // thread_attr.stack_mem = start_task_stack;
+  // thread_attr.stack_size = START_TASK_SIZE;
+  // thread_attr.cb_mem = start_task_cb;
+  // thread_attr.cb_size = osThreadCbSize;
+  // thread_attr.attr_bits = 0u;
+  // thread_attr.tz_module = 0u;
+
+  // // notice
+  // thread_id = osThreadNew(start_task, NULL, &thread_attr);
+  // EFM_ASSERT(thread_id != NULL);
+
   OSTaskCreate(&start_task_tcb, // Create the Start Task.
                "Start Task",
                start_task,

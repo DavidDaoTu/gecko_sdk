@@ -66,10 +66,10 @@ typedef struct {
   sl_wfx_packet_queue_item_t *tail_ptr;
 }sl_wfx_packet_queue_t;
 
-extern OS_SEM wfx_init_sem;
+// extern OS_SEM wfx_init_sem;
 #ifdef SL_CATALOG_KERNEL_PRESENT
 #include "cmsis_os2.h"
-
+extern osSemaphoreId_t wfx_init_sem;
 extern osSemaphoreId_t wfx_wakeup_sem;
 #endif
 

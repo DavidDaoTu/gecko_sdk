@@ -25,8 +25,8 @@
 #include "secure_link/sl_wfx_secure_link.h"
 
 // Securelink Task Configurations
-#define SL_WFX_SECURELINK_TASK_PRIO       osPriorityLow
-#define SL_WFX_SECURELINK_STACK_SIZE      512u
+#define SL_WFX_SECURELINK_TASK_PRIO       osPriorityNormal7//osPriorityLow
+#define SL_WFX_SECURELINK_STACK_SIZE      2048u//512u
 
 __ALIGNED(8) static uint8_t sl_wfx_securelink_stack[(SL_WFX_SECURELINK_STACK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
 __ALIGNED(4) static uint8_t sl_wfx_securelink_task_cb[osThreadCbSize];
@@ -77,18 +77,18 @@ void sl_wfx_securelink_task_start(void)
   sem_attr.cb_size = osSemaphoreCbSize;
   sem_attr.attr_bits = 0;
   
-  sl_wfx_securelink_sem = osSemaphoreNew(&sem_attr);
+  sl_wfx_securelink_sem = osSemaphoreNew(1, 0, &sem_attr);
   EFM_ASSERT(sl_wfx_securelink_sem != NULL);
   
   thread_attr.name = "WFX SecureLink task";
   thread_attr.priority = SL_WFX_SECURELINK_TASK_PRIO;
-  thread_attr.stack_mem = sl_wfx_securelink_task;
+  thread_attr.stack_mem = sl_wfx_securelink_stack;
   thread_attr.stack_size = SL_WFX_SECURELINK_STACK_SIZE;
   thread_attr.cb_mem = sl_wfx_securelink_task_cb;
   thread_attr.cb_size = osThreadCbSize;
   thread_attr.attr_bits = 0u;
   thread_attr.tz_module = 0u;
   
-  thread_id = osThreadNew(sl_wfx_bus_task, NULL, &thread_attr);
+  thread_id = osThreadNew(sl_wfx_securelink_task, NULL, &thread_attr);
   EFM_ASSERT(thread_id != NULL);
 }

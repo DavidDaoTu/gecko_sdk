@@ -41,8 +41,8 @@
 /// Current DHCP state machine state.
 static volatile uint8_t dhcp_state = DHCP_OFF;
 
-#define DHCP_TASK_PRIO              22u
-#define DHCP_TASK_STK_SIZE         800u//512u
+#define DHCP_TASK_PRIO              osPriorityAboveNormal1//22u
+#define DHCP_TASK_STK_SIZE          2048u//512u
 
 // /// DHCP client task stack
 // static CPU_STK dhcp_task_stk[DHCP_TASK_STK_SIZE];

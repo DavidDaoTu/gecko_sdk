@@ -45,8 +45,8 @@
 #endif
 
 
-#define WEBPAGE_START_TASK_PRIO              22u
-#define WEBPAGE_START_TASK_STK_SIZE         800u
+#define WEBPAGE_START_TASK_PRIO              osPriorityAboveNormal1
+#define WEBPAGE_START_TASK_STK_SIZE          3200u
 
 osSemaphoreId_t           scan_sem;
 static uint8_t            scan_sem_cb[osSemaphoreCbSize];

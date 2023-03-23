@@ -21,8 +21,8 @@
  ********************************************************************************************************
  *******************************************************************************************************/
 
-#include  <common/include/rtos_path.h>
-#include  <rtos_description.h>
+// #include  <common/include/rtos_path.h>
+// #include  <rtos_description.h>
 
 #if  defined(RTOS_MODULE_IO_SD_AVAIL)
 

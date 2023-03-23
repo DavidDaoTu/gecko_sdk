@@ -97,8 +97,9 @@ sl_status_t sl_wfx_init_bus(void)
   tx_buffer_id = 0;
 
   sl_wfx_host_reset_chip();
-
+  printf("sl_wfx_init_bus\r\n");
   result = sl_wfx_host_init_bus();
+  printf("\n2 sl_wfx_init_bus\r\n");
   SL_WFX_ERROR_CHECK(result);
 
   result = sl_wfx_host_sdio_transfer_cmd52(SL_WFX_BUS_READ, 0,

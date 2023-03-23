@@ -95,7 +95,7 @@ sl_status_t sl_wfx_init(sl_wfx_context_t *context)
   sl_wfx_context = context;
   sl_wfx_context->used_buffers = 0;
 
-  result = sl_wfx_init_bus(  );
+  result = sl_wfx_init_bus( );
   SL_WFX_ERROR_CHECK(result);
 #if (SL_WFX_DEBUG_MASK & SL_WFX_DEBUG_INIT)
   sl_wfx_host_log("--Bus initialized--\r\n");

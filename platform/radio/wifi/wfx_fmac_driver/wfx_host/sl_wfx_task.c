@@ -59,7 +59,7 @@ static void sl_wfx_task_entry(void *p_arg)
   uint32_t flags = 0u;
 
   (void)p_arg;
-
+  printf("3: sl_wfx_task_entry\n");
   sl_wfx_host_setup_memory_pools();
 
   while (1) {
@@ -74,11 +74,12 @@ static void sl_wfx_task_entry(void *p_arg)
     }
 #endif
     /*Wait for an event*/
+      printf("4: sl_wfx_task_entry\n");
     flags = osEventFlagsWait(sl_wfx_bus_events,
                              SL_WFX_BUS_EVENT_FLAG_RX | SL_WFX_BUS_EVENT_FLAG_TX,
                              osFlagsWaitAny,
                              osWaitForever);
-
+      printf("5: sl_wfx_task_entry\n");
     if (flags & SL_WFX_BUS_EVENT_FLAG_TX) {
       /* Process TX packets */
       sl_wfx_tx_process();
@@ -92,6 +93,7 @@ static void sl_wfx_task_entry(void *p_arg)
 #endif
     }
   }
+    printf("6: sl_wfx_task_entry\n");
 }
 
 /***************************************************************************//**
@@ -202,7 +204,9 @@ void sl_wfx_task_start()
   thread_attr.cb_size = osThreadCbSize;
   thread_attr.attr_bits = 0u;
   thread_attr.tz_module = 0u;
-
+  
+  printf("1: sl_wfx_task_entry\n");
   thread_id = osThreadNew(sl_wfx_task_entry, NULL, &thread_attr);
+  printf("2: sl_wfx_task_entry: %d\n", thread_id);
   EFM_ASSERT(thread_id != NULL);
 }

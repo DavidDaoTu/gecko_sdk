@@ -31,8 +31,8 @@
 #include "sl_cmsis_os2_common.h"
 
 // Event Task Configurations
-#define WFX_EVENTS_TASK_PRIO              osPriorityAboveNormal2
-#define WFX_EVENTS_TASK_STK_SIZE        4096u
+#define WFX_EVENTS_TASK_PRIO            osPriorityAboveNormal2//21u
+#define WFX_EVENTS_TASK_STK_SIZE        4096u//1024u
 #define WFX_EVENTS_NB_MAX                 10u
 
 // Contains the queue message Id

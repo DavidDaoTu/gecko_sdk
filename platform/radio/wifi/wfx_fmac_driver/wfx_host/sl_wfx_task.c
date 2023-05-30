@@ -29,7 +29,7 @@
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
 
-#define SL_WFX_BUS_TASK_PRIO             osPriorityHigh
+#define SL_WFX_BUS_TASK_PRIO             osPriorityRealtime//osPriorityNormal2//osPriorityHigh
 #define SL_WFX_BUS_STACK_SIZE            2048u
 
 __ALIGNED(8) static uint8_t sl_wfx_bus_stack[(SL_WFX_BUS_STACK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];

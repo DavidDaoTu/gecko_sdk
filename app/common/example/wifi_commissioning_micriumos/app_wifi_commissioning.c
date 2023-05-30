@@ -30,7 +30,7 @@
 #include "sl_cmsis_os2_common.h"
 #include "sl_wfx_host_init.h"
 
-#define START_APP_TASK_PRIO              osPriorityNormal1
+#define START_APP_TASK_PRIO              osPriorityNormal1//osPriorityNormal3
 #define START_APP_TASK_STK_SIZE          2400u
 /// Start task stack.
 __ALIGNED(8) static uint8_t start_app_stack[(START_APP_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];

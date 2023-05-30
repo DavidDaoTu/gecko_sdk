@@ -25,7 +25,7 @@
 #include "secure_link/sl_wfx_secure_link.h"
 
 // Securelink Task Configurations
-#define SL_WFX_SECURELINK_TASK_PRIO       osPriorityNormal7//osPriorityLow
+#define SL_WFX_SECURELINK_TASK_PRIO       osPriorityRealtime//osPriorityNormal7
 #define SL_WFX_SECURELINK_STACK_SIZE      2048u//512u
 
 __ALIGNED(8) static uint8_t sl_wfx_securelink_stack[(SL_WFX_SECURELINK_STACK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];

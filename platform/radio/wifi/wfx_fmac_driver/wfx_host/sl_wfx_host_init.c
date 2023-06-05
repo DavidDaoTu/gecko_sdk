@@ -29,7 +29,7 @@
 #include "sl_power_manager.h"
 #endif
 
-#define START_TASK_PRIO   osPriorityNormal1//osPriorityRealtime//30u
+#define START_TASK_PRIO   osPriorityRealtime//osPriorityHigh5//osPriorityNormal1//osPriorityRealtime//30u
 #define START_TASK_SIZE   2048u//1024u//512u
 
 #ifdef SL_CATALOG_WFX_SECURE_LINK_PRESENT

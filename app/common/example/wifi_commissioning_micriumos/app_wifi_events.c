@@ -31,7 +31,7 @@
 #include "sl_cmsis_os2_common.h"
 
 // Event Task Configurations
-#define WFX_EVENTS_TASK_PRIO            osPriorityAboveNormal2//21u
+#define WFX_EVENTS_TASK_PRIO            osPriorityAboveNormal2//osPriorityHigh2//osPriorityAboveNormal//osPriorityAboveNormal1//21u
 #define WFX_EVENTS_TASK_STK_SIZE        4096u//1024u
 #define WFX_EVENTS_NB_MAX                 10u
 
@@ -444,6 +444,7 @@ static void wfx_events_task(void *p_arg)
           break;
         }
       }
+      // sl_wfx_host_free_buffer(&wifi_events_msg, SL_WFX_RX_FRAME_BUFFER);
     }
   }
 }

@@ -45,8 +45,8 @@
 #endif
 
 
-#define WEBPAGE_START_TASK_PRIO              osPriorityAboveNormal1//22u
-#define WEBPAGE_START_TASK_STK_SIZE          3200u//800u
+#define WEBPAGE_START_TASK_PRIO              osPriorityAboveNormal1//osPriorityAboveNormal2//22u
+#define WEBPAGE_START_TASK_STK_SIZE          3200u//4096u//3200u//800u
 
 osSemaphoreId_t           scan_sem;
 static uint8_t            scan_sem_cb[osSemaphoreCbSize];
@@ -388,9 +388,12 @@ static const char *start_scan_cgi_handler(int index, int num_params,
   // Reset scan list
   scan_count_web = 0;
   memset(scan_list, 0, sizeof(scan_result_list_t) * SL_WFX_MAX_SCAN_RESULTS);
+  // Mention
+  // osSemaphoreGetCount(scan_sem);
+  // osSemaphoreAcquire(scan_sem, 0);
   result = sl_wfx_send_scan_command(WFM_SCAN_MODE_ACTIVE, NULL, 0, NULL, 0, NULL, 0, NULL);
   if ((result == SL_STATUS_OK) || (result == SL_STATUS_WIFI_WARNING)) {
-    status = osSemaphoreAcquire(scan_sem, osWaitForever);
+    status = osSemaphoreAcquire(scan_sem, osWaitForever); //5000
     if (status != osOK) {
       printf("Scan command timeout\r\n");
     }

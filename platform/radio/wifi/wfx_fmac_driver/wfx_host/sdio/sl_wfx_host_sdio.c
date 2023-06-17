@@ -1,5 +1,3 @@
-#ifdef  SL_WFX_USE_SDIO
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -50,6 +48,7 @@
 // #define SL_WIFI_CFG_SD_CONTROLLER_NAME             "sd0"
 // #endif
 //
+#ifdef  SL_WFX_USE_SDIO
 
 #define SDIO_ACTION_COMPLETION_TIMEOUT_MS     5000
 

@@ -82,6 +82,9 @@ configuration:
   - name: SL_POWER_MANAGER_LOWEST_EM_ALLOWED
     value: 2
     condition: [power_manager] 
+  - name: configMAX_SYSCALL_INTERRUPT_PRIORITY
+    value: 46
+    condition: [brd4321a_a06]
 define:
   - name: "DEBUG_EFM"
 tag:

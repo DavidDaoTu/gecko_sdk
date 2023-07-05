@@ -135,12 +135,17 @@
 
 // OS related options
 #define TCPIP_THREAD_NAME              "TCP/IP"
-#define TCPIP_THREAD_STACKSIZE          1000
 #define TCPIP_MBOX_SIZE                 10
 #define DEFAULT_UDP_RECVMBOX_SIZE       10
 #define DEFAULT_TCP_RECVMBOX_SIZE       10
 #define DEFAULT_ACCEPTMBOX_SIZE         10
 #define DEFAULT_THREAD_STACKSIZE        500
+#ifdef WGM160PX22KGA2
+#define TCPIP_THREAD_STACKSIZE          1400u
+#define TCPIP_THREAD_PRIO               39u
+#else
+#define TCPIP_THREAD_STACKSIZE          1000u
 #define TCPIP_THREAD_PRIO               16u
+#endif
 
 #endif /* __LWIPOPTS_H__ */

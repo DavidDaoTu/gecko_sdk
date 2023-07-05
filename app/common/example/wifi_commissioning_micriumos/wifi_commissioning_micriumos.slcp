@@ -84,7 +84,7 @@ configuration:
     condition: [power_manager] 
   - name: configMAX_SYSCALL_INTERRUPT_PRIORITY
     value: 46
-    condition: [brd4321a_a06]
+    condition: [brd4321a_a06, freertos]
 define:
   - name: "DEBUG_EFM"
 tag:

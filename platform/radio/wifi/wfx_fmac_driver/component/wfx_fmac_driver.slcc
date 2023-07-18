@@ -8,6 +8,9 @@ provides:
   - name: "wfx_fmac_driver"
 requires:
   - name: "wfx_bus_interface"
+  - name: "io_core"
+  - name: "common_lib"
+  - name: "micriumos_bsp"
   - name: "cmsis_rtos2"
   - name: "mem_pool"
   - name: "emlib_gpio"

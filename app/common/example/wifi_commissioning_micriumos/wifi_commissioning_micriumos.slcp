@@ -29,13 +29,16 @@ component:
   - id: sl_system
   - id: sl_system_init
   - id: wfx_fmac_driver
+  - id: micriumos_bsp
+  - id: micriumos_kernel
+  - id: micriumos_common_lib
+  - id: micriumos_io_core
+  - id: lwip_port_micriumos
   - id: lwip_core
   - id: lwip_api
   - id: lwip_netif_ethernet
   - id: lwip_app_http
   - id: lwip_app_lwiperf
-  - id: lwip_port_freertos
-  - id: freertos
 source:
   - path: app.c
   - path: app_webpage.c

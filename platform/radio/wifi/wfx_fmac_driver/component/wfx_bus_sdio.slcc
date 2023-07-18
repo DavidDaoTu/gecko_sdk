@@ -9,16 +9,21 @@ provides:
   - name: "wfx_bus_interface"
 requires:
   - name: "wfx_fmac_driver"
+  - name: "io_sd_driver_sdhc_arasan"
   - name: "device_init_hfrco"
   - name: "device_has_sdio"
 root_path: "platform/radio/wifi/wfx_fmac_driver"
 include:
   - path: "wfx_host/sdio/"
     file_list:
+      - path: "sl_wfx_host_sdio_fnct.h"
       - path: "sdio.h"
       - path: "sdiodrv.h"
 source:
   - path: "bus/sl_wfx_bus_sdio.c"
+  - path: "wfx_host/sdio/sl_wfx_host_sdio_fnct.c"
+  - path: "wfx_host/sdio/sl_wfx_host_sdio_io.c"
+  - path: "wfx_host/sdio/bsp_sd_hc.c"
   - path: "wfx_host/sdio/sdio.c"
   - path: "wfx_host/sdio/sdiodrv.c"
   - path: "wfx_host/sdio/sl_wfx_host_sdio.c"

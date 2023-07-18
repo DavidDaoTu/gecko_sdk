@@ -18,6 +18,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *****************************************************************************/
+
+#include <sl_component_catalog.h>
+
+#ifdef SL_CATALOG_FREERTOS_KERNEL_PRESENT
+
 #include <stdio.h>
 #include "em_device.h"
 #include "em_core.h"
@@ -1019,3 +1024,4 @@ void SDIO_IRQHandler (void)
   }
 }
 
+#endif // SL_CATALOG_FREERTOS_KERNEL_PRESENT

@@ -23,7 +23,7 @@
 #include "sl_wfx_task.h"
 #include "sl_wfx.h"
 
-#ifdef  SL_WFX_USE_SDIO
+#if defined(SL_WFX_USE_SDIO) && defined(SL_CATALOG_FREERTOS_KERNEL_PRESENT)
 
 #define SDIO_ACTION_COMPLETION_TIMEOUT_MS     5000
 

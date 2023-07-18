@@ -14,13 +14,14 @@
  * sections of the MSLA applicable to Source Code.
  *
  ******************************************************************************/
-/** For SDIO fixes */
-#if defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
-#include "os.h"
-#include "io.h"
-#include "bsp_os.h"
-#include "common.h"
-#endif
+
+// /** For SDIO fixes */
+// #if defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
+// #include "os.h"
+// #include "io.h"
+// #include "bsp_os.h"
+// #include "common.h"
+// #endif
 
 #include "em_common.h"
 #include "em_gpio.h"
@@ -31,6 +32,13 @@
 #include "sl_wfx_host_init.h"
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
+
+#if defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
+#include "os.h"
+#include "io.h"
+#include "bsp_os.h"
+#include "common.h"
+#endif
 
 #ifdef SL_CATALOG_POWER_MANAGER_PRESENT
 #include "sl_power_manager.h"
@@ -180,7 +188,6 @@ static void start_task(void *p_arg)
   (void)p_arg;
 
 #if defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
-  /** For SDIO fixes */
   RTOS_ERR  err;
   PP_UNUSED_PARAM(p_arg); // Prevent compiler warning.
 

@@ -8,14 +8,12 @@
 #include "em_cmu.h"
 #include "em_ldma.h"
 #include "em_bus.h"
-// #include "sleep.h" ??
-
 #include "sdiodrv.h"
 #include "sdio.h"
 
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
-#include "semphr.h"
+// #include "semphr.h"
 
 #include "app_webpage.h"
 
@@ -23,31 +21,8 @@
 #include "sl_wfx_host.h"
 #include "sl_wfx_host_pinout.h"
 #include "sl_wfx_task.h"
-
-// add
-// #include  <rtos_description.h>
 #include "sl_wfx.h"
-// #include <common/source/kal/kal_priv.h>
 
-// #include <io/include/sd.h>
-// #include <io/include/sd_card.h>
-
-// #ifdef SLEEP_ENABLED
-// #include "sl_power_manager.h"
-// #endif
-
-// #ifdef LIB_MEM_CFG_HEAP_SIZE
-// #if (LIB_MEM_CFG_HEAP_SIZE < 20480)
-// #error "LIB_MEM_CFG_HEAP_SIZE needs to be >= 20480"
-// #endif
-// #else
-// #error "LIB_MEM_CFG_HEAP_SIZE config missing"
-// #endif
-
-// #ifndef SL_WIFI_CFG_SD_CONTROLLER_NAME
-// #define SL_WIFI_CFG_SD_CONTROLLER_NAME             "sd0"
-// #endif
-//
 #ifdef  SL_WFX_USE_SDIO
 
 #define SDIO_ACTION_COMPLETION_TIMEOUT_MS     5000
@@ -180,9 +155,7 @@ sl_status_t sl_wfx_host_sdio_transfer_cmd52(sl_wfx_host_bus_transfer_type_t type
     SDIODRV_IOReadWriteDirect(&sdiodrv_handle, SDIODRV_IO_OP_WRITE, function, address, buffer);
   }
   // Wait for the operation completion
-  // portTICK_PERIOD_MS = 1000/1000
-  // SDIO_ACTION_COMPLETION_TIMEOUT_MS
-  if ((osSemaphoreAcquire(sdio_sem_handle, SDIO_ACTION_COMPLETION_TIMEOUT_MS/portTICK_PERIOD_MS) != osOK)
+  if ((osSemaphoreAcquire(sdio_sem_handle, SDIO_ACTION_COMPLETION_TIMEOUT_MS) != osOK)
       || sdio_error) {
     SDIODRV_Abort(&sdiodrv_handle, function);
     status = SL_STATUS_FAIL;
@@ -227,8 +200,7 @@ sl_status_t sl_wfx_host_sdio_transfer_cmd53(sl_wfx_host_bus_transfer_type_t type
   }
 
   // Wait for the operation completions
-  // portTICK_PERIOD_MS = 1000/1000
-  if ((osSemaphoreAcquire(sdio_sem_handle, SDIO_ACTION_COMPLETION_TIMEOUT_MS/portTICK_PERIOD_MS) != osOK)
+  if ((osSemaphoreAcquire(sdio_sem_handle, SDIO_ACTION_COMPLETION_TIMEOUT_MS) != osOK)
       || sdio_error) {
     SDIODRV_Abort(&sdiodrv_handle, function);
     status = SL_STATUS_FAIL;

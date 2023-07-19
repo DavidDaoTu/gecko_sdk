@@ -29,16 +29,31 @@ component:
   - id: sl_system
   - id: sl_system_init
   - id: wfx_fmac_driver
-  - id: micriumos_bsp
   - id: micriumos_kernel
-  - id: micriumos_common_lib
-  - id: micriumos_io_core
-  - id: lwip_port_micriumos
   - id: lwip_core
   - id: lwip_api
   - id: lwip_netif_ethernet
   - id: lwip_app_http
   - id: lwip_app_lwiperf
+requires:
+  - name: "io_sd_driver_sdhc_arasan"
+    condition: [micriumos_kernel]
+  - name: "io_core"
+    condition: [micriumos_kernel]
+  - name: "common_lib"
+    condition: [micriumos_kernel]
+  - name: "freertos_heap_4"
+    condition: [freertos]
+  - name: "lwip_port_freertos"
+    condition: [freertos]
+  - name: "micriumos_bsp"
+    condition: [micriumos_kernel]
+  - name: "micriumos_common_lib"
+    condition: [micriumos_kernel]
+  - name: "micriumos_io_core"
+    condition: [micriumos_kernel]
+  - name: "lwip_port_micriumos"
+    condition: [micriumos_kernel]
 source:
   - path: app.c
   - path: app_webpage.c

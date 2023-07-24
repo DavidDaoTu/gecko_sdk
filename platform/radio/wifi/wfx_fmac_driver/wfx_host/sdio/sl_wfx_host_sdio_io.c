@@ -17,7 +17,6 @@
 
 #include "sl_wfx_configuration_defaults.h"
 
-//#ifdef  SL_WFX_USE_SDIO
 #if defined(SL_WFX_USE_SDIO) && defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
 #include  <rtos_description.h>
 #include "sl_wfx.h"

@@ -13,7 +13,6 @@
 
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
-// #include "semphr.h"
 
 #include "app_webpage.h"
 

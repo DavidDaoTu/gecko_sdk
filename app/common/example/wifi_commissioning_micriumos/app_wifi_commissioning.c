@@ -29,8 +29,9 @@
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
 #include "sl_wfx_host_init.h"
+#include "sl_component_catalog.h"
 
-#define START_APP_TASK_PRIO              osPriorityNormal1//osPriorityNormal3
+#define START_APP_TASK_PRIO              osPriorityNormal1
 #define START_APP_TASK_STK_SIZE          2400u
 /// Start task stack.
 __ALIGNED(8) static uint8_t start_app_stack[(START_APP_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
@@ -55,7 +56,11 @@ static void start_app_task(void *p_arg)
 
   osSemaphoreAcquire(sl_wfx_init_sem, osWaitForever);
   // Clear the console and buffer
-  printf("Wi-Fi Commissioning Micrium  OS Example\r\n");
+  #if defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
+  printf("Wi-Fi Commissioning Micrium OS Example\r\n");
+  #elif defined(SL_CATALOG_FREERTOS_KERNEL_PRESENT)
+  printf("Wi-Fi Commissioning FreeRTOS Example\r\n");
+  #endif
 
   app_wifi_events_start();
   webpage_start();

@@ -44,8 +44,8 @@
 #include "sl_power_manager.h"
 #endif
 
-#define START_TASK_PRIO    osPriorityRealtime//osPriorityNormal
-#define START_TASK_SIZE    4096//2048u
+#define START_TASK_PRIO    osPriorityRealtime
+#define START_TASK_SIZE    4096
 
 #ifdef SL_CATALOG_WFX_SECURE_LINK_PRESENT
 extern void sl_wfx_securelink_task_start(void);

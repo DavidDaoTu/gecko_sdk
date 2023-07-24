@@ -21,6 +21,8 @@
 #ifndef __LWIPOPTS_H__
 #define __LWIPOPTS_H__
 
+#include <sl_component_catalog.h>
+
 #define LWIP_DEBUG LWIP_DBG_OFF
 #define TCP_DEBUG LWIP_DBG_OFF
 #define DHCP_DEBUG LWIP_DBG_OFF
@@ -135,12 +137,17 @@
 
 // OS related options
 #define TCPIP_THREAD_NAME              "TCP/IP"
-#define TCPIP_THREAD_STACKSIZE          1400//1000
+#if defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
+#define TCPIP_THREAD_STACKSIZE          1000
+#define TCPIP_THREAD_PRIO               16
+#elif defined(SL_CATALOG_FREERTOS_KERNEL_PRESENT)
+#define TCPIP_THREAD_STACKSIZE          1400
+#define TCPIP_THREAD_PRIO               39
+#endif
 #define TCPIP_MBOX_SIZE                 10
 #define DEFAULT_UDP_RECVMBOX_SIZE       10
 #define DEFAULT_TCP_RECVMBOX_SIZE       10
 #define DEFAULT_ACCEPTMBOX_SIZE         10
 #define DEFAULT_THREAD_STACKSIZE        500
-#define TCPIP_THREAD_PRIO               39//16
 
 #endif /* __LWIPOPTS_H__ */

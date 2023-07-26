@@ -38,10 +38,6 @@ component:
 requires:
   - name: "micriumos_bsp"
     condition: [micriumos_kernel]
-  - name: "micriumos_common_lib"
-    condition: [micriumos_kernel]
-  - name: "micriumos_io_core"
-    condition: [micriumos_kernel]
   - name: "lwip_port_micriumos"
     condition: [micriumos_kernel]
   - name: "io_sd_driver_sdhc_arasan"

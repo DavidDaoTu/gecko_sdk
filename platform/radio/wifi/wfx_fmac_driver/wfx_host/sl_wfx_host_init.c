@@ -45,7 +45,11 @@
 #endif
 
 #define START_TASK_PRIO    osPriorityRealtime
+#if defined(SL_CATALOG_FREERTOS_KERNEL_PRESENT)
 #define START_TASK_SIZE    4096
+#elif defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
+#define START_TASK_SIZE    2048
+#endif
 
 #ifdef SL_CATALOG_WFX_SECURE_LINK_PRESENT
 extern void sl_wfx_securelink_task_start(void);

@@ -13,6 +13,28 @@ filter:
     value: ["32-bit MCU"]
   - name: "Project Difficulty"
     value: ["Advanced"]
+component:
+  - id: simple_button
+    instance: [btn0, btn1]
+  - id: simple_led
+    instance: [led0, led1]
+  - id: iostream_recommended_stream
+  - id: iostream_retarget_stdio
+  - id: dmadrv
+  - id: sleeptimer
+  - id: board_control
+  - id: device_init
+  - id: device_init_clocks
+  - id: device_init_hfrco
+  - id: sl_system
+  - id: sl_system_init
+  - id: wfx_fmac_driver
+  - id: freertos
+  - id: lwip_core
+  - id: lwip_api
+  - id: lwip_netif_ethernet
+  - id: lwip_app_http
+  - id: lwip_app_lwiperf
 requires:
   - name: "micriumos_bsp"
     condition: [micriumos_kernel]
@@ -30,28 +52,11 @@ requires:
     condition: [micriumos_kernel]
   - name: "lwip_port_freertos"
     condition: [freertos]
-component:
-  - id: simple_button
-    instance: [btn0, btn1]
-  - id: simple_led
-    instance: [led0, led1]
-  - id: iostream_recommended_stream
-  - id: iostream_retarget_stdio
-  - id: dmadrv
-  - id: sleeptimer
-  - id: board_control
-  - id: device_init
-  - id: device_init_clocks
-  - id: device_init_hfrco
-  - id: sl_system
-  - id: sl_system_init
-  - id: wfx_fmac_driver
-  - id: micriumos_kernel
-  - id: lwip_core
-  - id: lwip_api
-  - id: lwip_netif_ethernet
-  - id: lwip_app_http
-  - id: lwip_app_lwiperf
+provides:
+  - name: "micriumos_common_lib"
+    condition: [micriumos_kernel]
+  - name: "micriumos_io_core"
+    condition: [micriumos_kernel]
 source:
   - path: app.c
   - path: app_webpage.c
@@ -101,6 +106,9 @@ configuration:
   - name: configMAX_SYSCALL_INTERRUPT_PRIORITY
     value: 46
     condition: [brd4321a, freertos]
+  - name: configMAX_SYSCALL_INTERRUPT_PRIORITY
+    value: 71
+    condition: [brd4161a, freertos]
 define:
   - name: "DEBUG_EFM"
 tag:

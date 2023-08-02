@@ -48,11 +48,9 @@ requires:
     condition: [micriumos_kernel]
   - name: "lwip_port_freertos"
     condition: [freertos]
-provides:
+recommends:
   - name: "micriumos_common_lib"
-    condition: [micriumos_kernel]
   - name: "micriumos_io_core"
-    condition: [micriumos_kernel]
 source:
   - path: app.c
   - path: app_webpage.c
@@ -105,6 +103,9 @@ configuration:
   - name: configMAX_SYSCALL_INTERRUPT_PRIORITY
     value: 71
     condition: [brd4161a, freertos]
+  - name: configMAX_SYSCALL_INTERRUPT_PRIORITY
+    value: 71
+    condition: [brd4162a, freertos]
 define:
   - name: "DEBUG_EFM"
 tag:

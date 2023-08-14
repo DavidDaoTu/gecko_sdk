@@ -15,14 +15,6 @@
  *
  ******************************************************************************/
 
-// /** For SDIO fixes */
-// #if defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
-// #include "os.h"
-// #include "io.h"
-// #include "bsp_os.h"
-// #include "common.h"
-// #endif
-
 #include "em_common.h"
 #include "em_gpio.h"
 #include "sl_wfx_task.h"
@@ -45,9 +37,9 @@
 #endif
 
 #define START_TASK_PRIO    osPriorityRealtime
-#if defined(SL_CATALOG_FREERTOS_KERNEL_PRESENT)
+#if defined(WGM160PX22KGA2)
 #define START_TASK_SIZE    4096
-#elif defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
+#else
 #define START_TASK_SIZE    2048
 #endif
 

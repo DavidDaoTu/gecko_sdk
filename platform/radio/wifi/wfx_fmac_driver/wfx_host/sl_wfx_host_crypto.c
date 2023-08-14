@@ -214,7 +214,7 @@ sl_status_t sl_wfx_host_verify_pub_key(sl_wfx_securelink_exchange_pub_keys_ind_t
   error_handler:
   err = osMutexRelease(sl_wfx_securelink_rx_mutex);
   if (err != osOK) {
-    printf("ERROR: sl_wfx_securelink_rx_mutex. unable to post.\n");
+    printf("ERROR: sl_wfx_securelink_rx_mutex unable to post.\n");
   }
   return status;
 }

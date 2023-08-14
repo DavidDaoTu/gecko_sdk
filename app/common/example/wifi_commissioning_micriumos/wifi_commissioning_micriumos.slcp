@@ -29,7 +29,7 @@ component:
   - id: sl_system
   - id: sl_system_init
   - id: wfx_fmac_driver
-  - id: freertos
+  - id: micriumos_kernel
   - id: lwip_core
   - id: lwip_api
   - id: lwip_netif_ethernet

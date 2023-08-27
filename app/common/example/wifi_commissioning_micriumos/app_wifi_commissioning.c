@@ -55,7 +55,7 @@ static void start_app_task(void *p_arg)
   (void)p_arg;
 
   osSemaphoreAcquire(sl_wfx_init_sem, osWaitForever);
-  // Clear the console and buffer
+  // Display the example name
   #if defined(SL_CATALOG_MICRIUMOS_KERNEL_PRESENT)
   printf("Wi-Fi Commissioning Micrium OS Example\r\n");
   #elif defined(SL_CATALOG_FREERTOS_KERNEL_PRESENT)

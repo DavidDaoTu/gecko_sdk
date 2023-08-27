@@ -21,10 +21,6 @@
 #include "lwip/dhcp.h"
 #include "lwip/netifapi.h"
 #include "app_webpage.h"
-// #include <kernel/include/os.h>
-// #include <common/include/rtos_utils.h>
-// #include <common/include/rtos_err.h>
-// #include <common/source/kal/kal_priv.h>
 #include "cmsis_os2.h"
 #include "sl_cmsis_os2_common.h"
 
@@ -43,11 +39,6 @@ static volatile uint8_t dhcp_state = DHCP_OFF;
 
 #define DHCP_TASK_PRIO              osPriorityAboveNormal1
 #define DHCP_TASK_STK_SIZE          2048u
-
-// /// DHCP client task stack
-// static CPU_STK dhcp_task_stk[DHCP_TASK_STK_SIZE];
-// /// DHCP client task TCB
-// static OS_TCB dhcp_task_tcb;
 
 // DHCP client task stack
 __ALIGNED(8) static uint8_t dhcp_client_stack[(DHCP_TASK_STK_SIZE * sizeof(void *)) & 0xFFFFFFF8u];
@@ -132,7 +123,6 @@ static void dhcp_client_task(void *arg)
     }
 
     // wait 250 ms
-    // KAL_Dly(250);
     osDelay(250);
   }
 }

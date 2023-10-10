@@ -35,11 +35,15 @@ requires:
     condition: [brd4321a]
   - name: "wfx_secure_link"
     condition: [brd4321a]
+  - name: "wfx_bus_spi"
+    condition: [brd4271a]
 recommends:
   - id: "wfx_bus_spi"
     condition: [brd2204a]
   - id: "wfx_bus_spi"
     condition: [brd2204c]
+  - id: "wfx_bus_spi"
+    condition: [brd4271a]
 root_path: "platform/radio/wifi/wfx_fmac_driver"
 include:
   - path: "./"
@@ -79,6 +83,10 @@ include:
       - path: "sl_wfx_pds.h"
   - path: "pds/brd8023a"
     unless: [brd8022a, brd8023a, brd4321a]
+    file_list:
+      - path: "sl_wfx_pds.h"
+  - path: "pds/brd4271a"
+    condition: [brd4271a]
     file_list:
       - path: "sl_wfx_pds.h"
 source:
@@ -147,6 +155,11 @@ config_file:
       file_id: "sl_wfx_host_pinout"
     path: "config/brd4321a/sl_wfx_host_pinout.h"
     condition: [brd4321a]
+  - override:
+      component: "wfx_fmac_driver"
+      file_id: "sl_wfx_host_pinout"
+    path: "config/brd4271a/sl_wfx_host_pinout.h"
+    condition: [brd4271a]
 template_contribution:
   - name: component_catalog
     value: wfx_fmac_driver

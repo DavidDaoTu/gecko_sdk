@@ -10,7 +10,12 @@ provides:
 requires:
   - name: "wfx_fmac_driver"
   - name: "dmadrv"
+  - name: "emlib_eusart"
+    condition: 
+    - "device_has_eusart"
   - name: "emlib_usart"
+    condition: 
+    - "device_has_usart"
   - name: "emlib_cmu"
 root_path: "platform/radio/wifi/wfx_fmac_driver"
 source:
@@ -69,6 +74,11 @@ config_file:
       file_id: "sl_wfx_host_bus_pinout"
     path: "config/brd4180x/spi/sl_wfx_host_bus_pinout.h"
     condition: [brd4180a]
+  - override:
+      component: "wfx_bus_spi"
+      file_id: "sl_wfx_host_bus_pinout"
+    path: "config/brd4271a/spi/sl_wfx_host_bus_pinout.h"
+    condition: [brd4271a]
 template_contribution:
   - name: component_catalog
     value: wfx_bus_spi

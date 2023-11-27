@@ -144,6 +144,20 @@ static int sl_wfx_host_spi_set_config(void *usart)
   return ret;
 }
 
+#if defined(EUSART_PRESENT)
+/***************************************************************************//**
+ * @brief Manually clear eusart Tx fifo.
+ ******************************************************************************/
+static void clearEusartFifos(EUSART_TypeDef *eusart)
+{
+  // EUSART_CMD_CLEARTX reportedly only affects UART, not SPI mode,
+  // and there is no EUSART_CMD_CLEARRX. Only way to clear the
+  // FIFOs is via the big hammer of disabling then reenabling it.
+  EUSART_Enable(eusart, eusartDisable);
+  EUSART_Enable(eusart, eusartEnable);
+}
+#endif /* EUSART_PRESENT */
+
 /**************************************************************************//**
  * Initialize SPI peripheral
  *****************************************************************************/
@@ -151,6 +165,9 @@ sl_status_t sl_wfx_host_init_bus(void)
 {
   RTOS_ERR err;
   int res;
+  sl_status_t status = SL_STATUS_OK;
+  spi_enabled = true;
+  dummy_tx_data = 0u;
 
 #if defined(USART_PRESENT)
   // Initialize and enable the USART
@@ -158,11 +175,9 @@ sl_status_t sl_wfx_host_init_bus(void)
 
   res = sl_wfx_host_spi_set_config(USART);
   if (res != 0) {
-    return SL_STATUS_FAIL;
+    status = SL_STATUS_FAIL;
   }
 
-  spi_enabled = true;
-  dummy_tx_data = 0;
   usartInit.baudrate = 36000000u;
   usartInit.msbf = true;
 #if defined(EFR32MG24B020F1536IM48) || defined(EFR32MG24A020F1536GM48) || defined(EFR32MG24B220F1536IM48)
@@ -226,26 +241,17 @@ sl_status_t sl_wfx_host_init_bus(void)
 
   res = sl_wfx_host_spi_set_config(EUSART);
   if (res != 0) {
-    return SL_STATUS_FAIL;
+    status = SL_STATUS_FAIL;
   }
-
-  spi_enabled = true;
-  dummy_tx_data = 0;
-
   // Configure the clocks.
-  // CMU_ClockSelectSet(cmuClock_EUSART2, cmuSelect_EM01GRPCCLK);
   CMU_ClockEnable(cmuClock_GPIO, true);
   CMU_ClockEnable(eusart_clock, true);
 
   advancedInit.msbFirst = true;
-  // advancedInit.autoCsEnable = false;
-  // init.bitRate = 7500000;
+  advancedInit.forceLoad = false;
+  advancedInit.autoCsEnable = false;
+  init.bitRate = 7000000u;
   init.advancedSettings = &advancedInit;
-
-  // Initialize the EUSART
-  EUSART_SpiInit(EUSART, &init);
-  // EUSART->CTRL |= (1u << _USART_CTRL_SMSDELAY_SHIFT);
-
   // Connect EUSART to ports
   GPIO->EUSARTROUTE[SL_WFX_HOST_PINOUT_SPI_PERIPHERAL_NO].TXROUTE = 
                                 (SL_WFX_HOST_PINOUT_SPI_TX_PORT 
@@ -264,28 +270,47 @@ sl_status_t sl_wfx_host_init_bus(void)
                                   << _GPIO_EUSART_SCLKROUTE_PORT_SHIFT)
                                 | (SL_WFX_HOST_PINOUT_SPI_CLK_PIN 
                                   << _GPIO_EUSART_SCLKROUTE_PIN_SHIFT);
-
-  GPIO->EUSARTROUTE[SL_WFX_HOST_PINOUT_SPI_PERIPHERAL_NO].ROUTEEN = 
-                                GPIO_EUSART_ROUTEEN_RXPEN  |
-                                GPIO_EUSART_ROUTEEN_TXPEN  |
-                                GPIO_EUSART_ROUTEEN_SCLKPEN;
-
+  // Auto CS enabling, SPI 4 wire mode
+  GPIO->EUSARTROUTE[SL_WFX_HOST_PINOUT_SPI_PERIPHERAL_NO].CSROUTE = 
+                                (SL_WFX_HOST_PINOUT_SPI_CS_PORT
+                                  << _GPIO_EUSART_CSROUTE_PORT_SHIFT
+                                | SL_WFX_HOST_PINOUT_SPI_CS_PIN
+                                  << _GPIO_EUSART_CSROUTE_PIN_SHIFT);
+  // SPI 4 wire mode
+  if (advancedInit.autoCsEnable == true) {
+    GPIO->EUSARTROUTE[SL_WFX_HOST_PINOUT_SPI_PERIPHERAL_NO].ROUTEEN = GPIO_EUSART_ROUTEEN_RXPEN
+                                                                    | GPIO_EUSART_ROUTEEN_TXPEN
+                                                                    | GPIO_EUSART_ROUTEEN_SCLKPEN
+                                                                    | GPIO_EUSART_ROUTEEN_CSPEN;
+  } else {
+    GPIO->EUSARTROUTE[SL_WFX_HOST_PINOUT_SPI_PERIPHERAL_NO].ROUTEEN = GPIO_EUSART_ROUTEEN_RXPEN
+                                                                    | GPIO_EUSART_ROUTEEN_TXPEN
+                                                                    | GPIO_EUSART_ROUTEEN_SCLKPEN;
+  }
+  // Initialize the EUSART
+  EUSART_SpiInit(EUSART, &init);
+  GPIO_PinModeSet(SL_WFX_HOST_PINOUT_SPI_CS_PORT, SL_WFX_HOST_PINOUT_SPI_CS_PIN, gpioModePushPull, 1);
 #endif /* USART_PRESENT */
 
   GPIO_PinModeSet(SL_WFX_HOST_PINOUT_SPI_TX_PORT, SL_WFX_HOST_PINOUT_SPI_TX_PIN, gpioModePushPull, 0);
   GPIO_PinModeSet(SL_WFX_HOST_PINOUT_SPI_RX_PORT, SL_WFX_HOST_PINOUT_SPI_RX_PIN, gpioModeInput, 0);
   GPIO_PinModeSet(SL_WFX_HOST_PINOUT_SPI_CLK_PORT, SL_WFX_HOST_PINOUT_SPI_CLK_PIN, gpioModePushPull, 0);
   OSSemCreate(&spi_sem, "spi semaphore", 0, &err);
+  // Initialize DMA.
   DMADRV_Init();
-  DMADRV_AllocateChannel(&tx_dma_channel, NULL);
-  DMADRV_AllocateChannel(&rx_dma_channel, NULL);
-  GPIO_PinModeSet(SL_WFX_HOST_PINOUT_SPI_CS_PORT, SL_WFX_HOST_PINOUT_SPI_CS_PIN, gpioModePushPull, 1);
+  if (DMADRV_AllocateChannel(&tx_dma_channel, NULL) != ECODE_EMDRV_DMADRV_OK) {
+    status = ECODE_EMDRV_DMADRV_CH_NOT_ALLOCATED;
+  }
+  if (DMADRV_AllocateChannel(&rx_dma_channel, NULL) != ECODE_EMDRV_DMADRV_OK) {
+    status = ECODE_EMDRV_DMADRV_CH_NOT_ALLOCATED;
+  }
 #if defined(USART_PRESENT)
   USART->CMD = USART_CMD_CLEARRX | USART_CMD_CLEARTX;
 #elif defined(EUSART_PRESENT)
-  EUSART->CMD = EUSART_CMD_CLEARTX;
+  clearEusartFifos(EUSART);
 #endif
-  return SL_STATUS_OK;
+
+  return status;
 }
 
 /**************************************************************************//**
@@ -365,6 +390,8 @@ void receiveDMA(uint8_t* buffer, uint16_t buffer_length)
                           NULL,
                           NULL);
 #elif defined(EUSART_PRESENT) || defined(EFR32FG25B222F1920IM56)
+  clearEusartFifos(EUSART);
+
   // Start receive DMA.
   DMADRV_PeripheralMemory(rx_dma_channel,
                           eusart_rx_signal,
@@ -414,6 +441,8 @@ void transmitDMA(uint8_t* buffer, uint16_t buffer_length)
                           NULL,
                           NULL);
 #elif defined(EUSART_PRESENT) || defined(EFR32FG25B222F1920IM56)
+  clearEusartFifos(EUSART);
+
   DMADRV_PeripheralMemory(rx_dma_channel,
                           eusart_rx_signal,
                           &dummy_rx_data,
@@ -481,7 +510,7 @@ sl_status_t sl_wfx_host_spi_transfer_no_cs_assert(sl_wfx_host_bus_transfer_type_
   // Check that transmit FIFO is not full
   while (!(EUSART->STATUS & EUSART_STATUS_TXFL)) {
   }
-  EUSART->CMD = EUSART_CMD_CLEARTX;
+  clearEusartFifos(EUSART);
 
   if (header_length > 0) {
     for (uint8_t *buffer_ptr = header; header_length > 0; --header_length, ++buffer_ptr) {
@@ -495,7 +524,6 @@ sl_status_t sl_wfx_host_spi_transfer_no_cs_assert(sl_wfx_host_bus_transfer_type_
     }
   }
   if (buffer_length > 0) {
-    EUSART->CMD = EUSART_CMD_CLEARTX;
     OSSemSet(&spi_sem, 0, &err);
     if (is_read) {
       receiveDMA(buffer, buffer_length);

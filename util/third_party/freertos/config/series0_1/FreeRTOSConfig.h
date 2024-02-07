@@ -94,7 +94,7 @@
 //  <o>Preemption interrupt priority
 //  <i> Maximum priority of interrupts that are safe to call FreeRTOS API.
 //  <i> Default: 96
-#define configMAX_SYSCALL_INTERRUPT_PRIORITY    96
+#define configMAX_SYSCALL_INTERRUPT_PRIORITY    71//96 //EFR32MG12
 
 //  <q>Use time slicing
 //  <i> Enable setting to use timeslicing.

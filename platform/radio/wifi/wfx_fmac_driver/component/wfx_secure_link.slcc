@@ -24,7 +24,7 @@ source:
       - path: "wfx_host/sl_wfx_host_crypto.c"
       - path: "wfx_host/sl_wfx_secure_link_task.c"
         condition:
-          - micriumos
+          - cmsis_rtos2
 config_file:
   - path: "config/sl_wfx_secure_link_configuration.h"
     file_id: "sl_wfx_secure_link_configuration"
